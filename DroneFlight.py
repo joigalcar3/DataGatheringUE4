@@ -1,0 +1,335 @@
+import airsim
+import numpy as np
+import time
+import sys
+import random
+from datetime import datetime
+import keyboard
+
+from Occupancy_grid.OccupancyMap import OccupancyMap
+from Occupancy_grid.GridNavigation import GridNavigation
+from Occupancy_grid.DroneSensors import DroneSensors
+from Occupancy_grid.compute_distance_points import compute_distance_points
+from Occupancy_grid.user_input import load_user_input
+
+# TODO: take into account measurement time when considering the measurement frequency
+
+
+class DroneFlight:
+    """
+    Class which carries out the complete flight from a single drone. From the generation of the map with OccupancyMap,
+    to the obstacle avoidance with GridNavigation, to the collection of data with DroneSensors. It incorporates all
+    the methods in order to make a single flight successful.
+    """
+    def __init__(self, altitude_m, altitude_range_m, cell_size_m, ue4_airsim_factor, robot_radius_m, sensors,
+                 camera_info, sample_rate=25, min_flight_distance_m=30, saved_vertices_filename='object_points',
+                 update_saved_vertices=False, plot2D=False, plot3D=True):
+        self.altitude_m = altitude_m
+        self.altitude_range_m = altitude_range_m
+        self.cell_size_m = cell_size_m
+        self.min_flight_distance_m = min_flight_distance_m
+        self.saved_vertices_filename = saved_vertices_filename
+        self.update_saved_vertices = update_saved_vertices
+        self.plot2D = plot2D
+        self.plot3D = plot3D
+
+        self.start_grid = None
+        self.goal_grid = None
+        self.start_world = None
+        self.goal_world = None
+        self.path = None
+
+        self.ue4_airsim_factor = ue4_airsim_factor
+        self.robot_radius_m = robot_radius_m
+        self.robot_radius = self.robot_radius_m/self.cell_size_m
+        distances = [altitude_m, altitude_range_m, cell_size_m]
+        altitude_flags = [True, False, False]
+        self.altitude, self.altitude_range, self.cell_size = self.distances_to_ue4(distances, altitude_flags)
+
+        self.client = None
+        self.connect_airsim()
+
+        self.env_map = None
+
+        self.sensors = sensors
+        self.camera_info = camera_info
+        self.sample_rate = sample_rate
+        self.sensors = DroneSensors(self.client, self.sensors, self.camera_info)
+
+    def distances_to_ue4(self, distances, altitude_flags):
+        """
+        Converts a list of distances from AirSim metres to UE4 units
+        :param distances: list of distances to convert to UE4 units
+        :param altitude_flags: whether each of the provided units are altitudes. If that is the case, it must be taken
+        into account that negative UE4 altitude units are positive altitudes
+        :return ue4_distances: list with converted units
+        """
+        ue4_distances = []
+        for i in range(len(distances)):
+            ue4_distance = self.distance_to_ue4(distances[i], altitude_flags[i])
+            ue4_distances.append(ue4_distance)
+        return ue4_distances
+
+    def distance_to_ue4(self, distance, altitude=False):
+        """
+        Converts a distance to UE4 units
+        :param distance: distance in AirSim units to convert to UE4 units
+        :param altitude: whether the provided distance is an altitude
+        :return ue4_distance: distance in UE4 units
+        """
+        # Inputs converted to UE4 unit system
+        factor = 1
+        if altitude:
+            factor = -1
+        ue4_distance = factor * int(distance * self.ue4_airsim_factor)  # [UE4_units]
+        return ue4_distance
+
+    def connect_airsim(self):
+        """
+        Method to establish the connection with the AirSim Multirotor
+        :return:
+        """
+        # Connect to the AirSim simulator
+        self.client = airsim.MultirotorClient()
+        self.client.confirmConnection()
+        self.client.enableApiControl(True)
+        self.client.armDisarm(False)
+
+    def extract_occupancy_map(self, altitude_m=None):
+        """
+        Method which extracts the 2D Occupancy grid using the provided altitude for slicing the point cloud
+        :param altitude_m: altitude provided in meters
+        :return:
+        """
+        if altitude_m is not None:
+            self.altitude = self.distance_to_ue4(altitude_m, True)
+        # Extract occupancy grid
+        self.env_map = OccupancyMap(cell_size=self.cell_size, ue4_airsim_conv=self.ue4_airsim_factor, client=self.client)
+        self.env_map.run(self.altitude, self.altitude_range, self.saved_vertices_filename, self.update_saved_vertices,
+                         self.plot2D, self.plot3D)
+
+    def obtain_start_goal(self):
+        """
+        Method to obtain a random start and goal location within the constraints that they need to be separated with
+        a minimum distance and that they need to be separated from the obstacles with a minimum distance of robot_radius
+        :return:
+        """
+        x_dim = self.env_map.extent_x - 1
+        y_dim = self.env_map.extent_y - 1
+
+        # Min distance in grid coordinates
+        min_distance_grid = np.ceil(self.min_flight_distance_m / self.cell_size_m)
+        self.start_grid = (random.randint(0, x_dim), random.randint(0, y_dim))
+        self.goal_grid = self.start_grid
+
+        # Generate new points as long as the points are generated on top of an obstacle or the distance between them is
+        # below the defined threshold.
+        while compute_distance_points(self.start_grid, self.goal_grid) < min_distance_grid or \
+                self.env_map.check_obstacle(self.goal_grid, self.robot_radius) or \
+                self.env_map.check_obstacle(self.start_grid, self.robot_radius):
+            self.start_grid = (random.randint(0, x_dim), random.randint(0, y_dim))
+            self.goal_grid = (random.randint(0, x_dim), random.randint(0, y_dim))
+        print(self.start_grid, self.goal_grid)
+
+    def navigate_drone_grid(self, navigation_type="A_star", smooth=True, start_point=None, goal_point=None):
+        """
+        Method which obtains the path of grid points to follow in order to avoid the obstacles. First, the start and
+        goal points are created if they have not been provided, then the navigation is computed with the method
+        specified and finally, the path is smoothened with the B-spline if required.
+        :param navigation_type: type of navigation chosen. The types are those outlined in GridNavigation.py
+        :param smooth: whether the path needs to be smoothened with the B-spline
+        :param start_point: the starting point of the flight
+        :param goal_point: the final point of the flight
+        :return:
+        """
+        # If the start and goal points are not provided or the ones provided are on an obstacle, then they are generated
+        if (start_point is None and goal_point is None) or \
+                self.env_map.check_obstacle(start_point, self.robot_radius) or \
+                self.env_map.check_obstacle(goal_point, self.robot_radius):
+            self.obtain_start_goal()
+        else:
+            self.start_grid = start_point
+            self.goal_grid = goal_point
+
+        # Plot the start and goal points on the 3D grid
+        self.env_map.plot_start_goal_3D_grid(self.start_grid, self.goal_grid)
+
+        # Compute the path with the chosen navigation type
+        nav = GridNavigation(self.env_map, self.plot2D, self.plot3D)
+        if navigation_type == "A_star":
+            path = nav.navigation_A_start(self.start_grid, self.goal_grid, self.robot_radius)
+        elif navigation_type == "wavefront":
+            path = nav.navigate_wavefront(self.start_grid, self.goal_grid)
+        elif navigation_type == "Voronoid":
+            path = nav.navigate_Voronoid(self.start_grid, self.goal_grid, self.robot_radius)
+        elif navigation_type == "RRT_star":
+            path = nav.navigation_RRT_star(self.start_grid, self.goal_grid)
+        elif navigation_type == "PRM":
+            path = nav.navigation_PRM(self.start_grid, self.goal_grid, self.robot_radius)
+        else:
+            raise ValueError("Navigation type does not exist.")
+
+        # Smoothen the path
+        if smooth:
+            path_or = path.copy()
+            success = False
+            reduction = 0.05
+            # Repeat the smoothening as long as the reduction is less than 1 (a smoothening is performed) or there is
+            # a collision along the smoothened path
+            while not success and reduction <= 1:
+                try:
+                    path, collision = nav.smooth_B_spline(path_or, reduction=reduction)
+                    success = not collision
+                except:
+                    success = False
+                if not success:
+                    path = path_or
+                    print('Smoothening with a reduction of ' + str(reduction) + ' did not succeed.')
+                    reduction += 0.05
+                    reduction = np.round(reduction, 1)
+                    if reduction > 1:
+                        print('Smoothening did not succeed.')
+
+        # Translate the path to AirSim coordinates and save the AirSim coordinates of the start and goal locations
+        self.path = self.env_map.translate_path_to_world_coord(path, self.altitude)
+        self.start_world = self.env_map.translate_point_to_world_coord(self.start_grid, 0)
+        self.goal_world = self.env_map.translate_point_to_world_coord(self.goal_grid, 0)
+
+    def teleport_drone_start(self):
+        """
+        Method that teleports the drone to the start location
+        :return:
+        """
+        # Initialize sensors
+        self.sensors.initialize_sensors()
+
+        # Teleport drone to the start position
+        pose = self.client.simGetVehiclePose()
+        pose.position.x_val = self.start_world[0]
+        pose.position.y_val = self.start_world[1]
+
+        self.client.simSetVehiclePose(pose, True)
+
+    def take_off(self):
+        """
+        Method that arms the drone and makes it take-off
+        :return:
+        """
+        # Start up the drone
+        print("arming the drone...")
+        self.client.armDisarm(True)
+
+        # Check proper take-off
+        self.check_take_off()
+
+        # AirSim uses NED coordinates so negative axis is up.
+        print("make sure we are hovering at " + str(-self.altitude_m) + " meters...")
+        self.client.moveToZAsync(self.altitude_m, 1).join()
+
+    def check_take_off(self):
+        """
+        Method that checks that the drone has actually taken off. If not, an error is raised.
+        :return:
+        """
+        if not self.client.isApiControlEnabled():
+            self.client.enableApiControl(True)
+        state = self.client.getMultirotorState()
+        if state.landed_state == airsim.LandedState.Landed:
+            print("taking off...")
+            self.client.takeoffAsync().join()
+        else:
+            self.client.hoverAsync().join()
+
+        time.sleep(2)
+
+        state = self.client.getMultirotorState()
+        if state.landed_state == airsim.LandedState.Landed:
+            print("take off failed...")
+            sys.exit(1)
+
+    def fly_trajectory(self):
+        """
+        Method that flies the drone along the computed trajectory
+        :return:
+        """
+        # see https://github.com/Microsoft/AirSim/wiki/moveOnPath-demo
+        # this method is async and we are not waiting for the result since we are passing timeout_sec=0.
+        print("flying on path...")
+        # self.client.moveOnPathAsync(self.path, 12, 120, airsim.DrivetrainType.ForwardOnly,
+        #                             airsim.YawMode(False, 0), 20, 1)
+        self.client.moveOnPathAsync(self.path, 12, 120, airsim.DrivetrainType.ForwardOnly,
+                                    airsim.YawMode(False, 0), -1, 0)
+
+    def check_goal_arrival(self):
+        """
+        Method that checks whether the drone has arrived to its destination. It is considered that the drone has arrived
+        to its destination if the distance between its position and the goal is less than 2 AirSim metres.
+        :return: whether the drone has arrived to its goal
+        """
+        # Obtain drone location
+        drone_location = self.client.simGetVehiclePose()
+        real_x = drone_location.position.x_val
+        real_y = drone_location.position.y_val
+
+        # Obtain goal location
+        goal_x = self.goal_world[0]
+        goal_y = self.goal_world[1]
+
+        # Compute the distance between both locations
+        distance = np.sqrt((goal_x-real_x)**2 + (goal_y-real_y)**2)
+        print('Goal: (' + str(goal_x) + ',' + str(goal_y) +
+              '). Drone location: (' + str(real_x) + ',' + str(real_y) + '). Distance: ' + str(distance) + '.')
+
+        # Check whether the distance is less than 2 metres
+        if distance < 2:
+            return False
+        return True
+
+    def obtain_sensor_data(self):
+        """
+        Method that retrieves the data from the sensors given the sample rate.
+        :return:
+        """
+        # Obtains the sensor data at the specified sample rate as long as the drone has not arrived to its destination
+        while self.check_goal_arrival():
+            self.sensors.store_sensors_data()
+            time.sleep(1 / self.sample_rate)
+            now = datetime.now()
+            current_time = now.strftime("%H:%M:%S")
+            print("Current Time =", current_time)
+            if keyboard.is_pressed('K'):
+                break
+
+        # Once the drone has arrived to its destination, the sensor data is stored in their respective files
+        self.sensors.write_to_file()
+
+    def run(self, navigation_type="A_star", start_point=None, goal_point=None):
+        """
+        Method that carries out the complete flight of a drone. First, the occupancy map is extracted and the navigation
+        of the drone is computed. Then, the drone is teleported to the start, the drone takes-off and flies the
+        trajectory. Along the way, the sensor data is collected. Once concluded, the drone is brough back to the start
+        :param navigation_type: the type of navigation used
+        :param start_point: the start location for the flight
+        :param goal_point: the goal location of the flight
+        :return:
+        """
+        self.extract_occupancy_map()
+        self.navigate_drone_grid(navigation_type=navigation_type, start_point=start_point, goal_point=goal_point)
+        self.teleport_drone_start()
+        self.take_off()
+        self.fly_trajectory()
+        self.obtain_sensor_data()
+        self.client.reset()
+
+
+if __name__ == "__main__":
+    # User input
+    args = load_user_input()
+
+    # Fly drone
+    drone_flight = DroneFlight(args.altitude_m, args.altitude_range_m, args.cell_size_m,
+                               args.ue4_airsim_conversion_units, args.robot_radius, args.sensors_lst, args.cameras_info,
+                               args.sample_rate, min_flight_distance_m=args.min_flight_distance_m,
+                               saved_vertices_filename=args.saved_vertices_filename,
+                               update_saved_vertices=args.update_saved_vertices, plot2D=args.plot2D, plot3D=args.plot3D)
+    drone_flight.run(navigation_type=args.navigation_type, start_point=args.start, goal_point=args.goal)
