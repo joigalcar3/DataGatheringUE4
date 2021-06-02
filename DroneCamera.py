@@ -11,11 +11,12 @@ class DroneCamera:
     """
     Class that serves as interface for the DroneSensors class for the camera sensor
     """
-    def __init__(self, alias, characteristics, client, flight_folder):
+    def __init__(self, alias, characteristics, client, flight_folder, vehicle_name=''):
         self.alias = alias  # Name give to the camera
         self.camera_name = characteristics["camera_name"]  # Name of the camera in AirSim
         self.image_type = characteristics["image_type"]    # What type of image do we want to obtain: vision, depth, seg
         characteristics_keys = list(characteristics.keys())
+        self.vehicle_name = vehicle_name
 
         # Whether the image should be saved with floats instead of integers
         if "pixels_as_float" in characteristics_keys:
@@ -46,7 +47,7 @@ class DroneCamera:
         Method to store the information from the camera prior to the flight in an Excel
         :return:
         """
-        response = self.client.simGetImages([self.obtain_camera_image()])[0]
+        response = self.client.simGetImages([self.obtain_camera_image()], vehicle_name=self.vehicle_name)[0]
         self.width = response.width
         self.height = response.height
 

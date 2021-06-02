@@ -16,7 +16,7 @@ class OccupancyMap:
         self.client = client
         self.folder = os.path.join(os.getcwd(), folder)
         self.filename = None
-        self.ue4_airsim_conv= ue4_airsim_conv
+        self.ue4_airsim_conv = ue4_airsim_conv
 
         self.filtered_points = None
         self.filtered_points_array = None
@@ -95,12 +95,14 @@ class OccupancyMap:
         space_points = pickle.load(open(path_save, 'rb'))
         object_names = space_points.keys()
         filtered_points = {}
+        h_max = h + delta_h
+        h_min = max(h - delta_h, 150)
         for name in object_names:
             points = space_points[name]
-            point_filtered = points[(points[:, -1] <= (h + delta_h)) &
-                                    (points[:, -1] >= (h - delta_h))]   # Filter the points found within the range
+            point_filtered = points[(points[:, -1] <= h_max) &
+                                    (points[:, -1] >= h_min)]   # Filter the points found within the range
             pf_projected = point_filtered[:, :-1]   # Remove the altitude component
-            if pf_projected.size:   # Only considered objects which have points in the point cloud slice
+            if pf_projected.size and name != 'externalcamera':   # Only considered objects which have points in the point cloud slice
                 filtered_points[name] = pf_projected  # Object filtered points
         self.filtered_points = filtered_points
         return self.filtered_points
@@ -187,31 +189,35 @@ class OccupancyMap:
         self.object_grid_coord_all = self.object_grid_coord.copy()
         for name in objects_names:
             object_points = np.array(list(self.object_grid_coord[name]))  # Coordinates of each obstacle
-            # Obtain the (grid) coordinates of the points that shape the outer edge of the polygon
-            _, output_points_unordered = list(obtain_outer_edge(object_points, alpha, only_outer=True))
+            if object_points.shape[0] > 3:
+                # Obtain the (grid) coordinates of the points that shape the outer edge of the polygon
+                _, output_points_unordered = list(obtain_outer_edge(object_points, alpha, only_outer=True))
 
-            # Order the points clockwise
-            output_points_ordered = counter_clockwise_ordering(output_points_unordered)
+                # Order the points clockwise
+                output_points_ordered = counter_clockwise_ordering(output_points_unordered)
 
-            x, y = np.meshgrid(np.arange(self.grid.shape[0]),
-                               np.arange(self.grid.shape[1]))  # make a canvas with coordinates
-            x, y = x.flatten(), y.flatten()
-            points = np.vstack((x, y)).T
+                x, y = np.meshgrid(np.arange(self.grid.shape[0]),
+                                   np.arange(self.grid.shape[1]))  # make a canvas with coordinates
+                x, y = x.flatten(), y.flatten()
+                points = np.vstack((x, y)).T
 
-            # Make a polygon with the coordinates of the given points
-            p = Path(output_points_ordered)
+                # Make a polygon with the coordinates of the given points
+                p = Path(output_points_ordered)
 
-            # The points within the polygon are identified. A small radius is given in order to also consider
-            # those points on the edges.
-            grid = p.contains_points(points, radius=0.0000001)
-            mask = grid.reshape(self.grid.shape[0],
-                                self.grid.shape[1])  # now you have a mask with points inside a polygon
+                # The points within the polygon are identified. A small radius is given in order to also consider
+                # those points on the edges.
+                grid = p.contains_points(points, radius=0.0000001)
+                mask = grid.reshape(self.grid.shape[0],
+                                    self.grid.shape[1])  # now you have a mask with points inside a polygon
 
-            # Set up the grid coordinates in a 2D mesh
-            points_grid = points.reshape(self.grid.shape[0], self.grid.shape[1], 2)
+                # Set up the grid coordinates in a 2D mesh
+                points_grid = points.reshape(self.grid.shape[0], self.grid.shape[1], 2)
 
-            # Apply mask to point grid
-            internal_points = points_grid[mask]
+                # Apply mask to point grid
+                internal_points = points_grid[mask]
+            else:
+                internal_points = object_points
+
             for i in range(internal_points.shape[0]):
                 # All internal object points coordinates are stored
                 self.object_grid_coord_all[name].append(tuple(internal_points[i, :]))

@@ -17,6 +17,7 @@ class GridNavigation:
     """
     Class which carries out the navigation of the drone flight given a computed grid occupancy map
     """
+
     def __init__(self, om: OccupancyMap, plotter_2D=True, plotter_3D=True):
         self.om = om
         self.grid = om.grid
@@ -63,8 +64,8 @@ class GridNavigation:
         gy = goal[1]
 
         # Obstacle coordinates
-        ox = np.where(self.grid is True)[0].tolist()
-        oy = np.where(self.grid is True)[1].tolist()
+        ox = np.where(self.grid == True)[0].tolist()
+        oy = np.where(self.grid == True)[1].tolist()
 
         rx, ry = VoronoiRoadMapPlanner(only_integers=True, show_animation=self.plotter_2D).planning(sx, sy, gx, gy, ox,
                                                                                                     oy, robot_size)
@@ -96,8 +97,8 @@ class GridNavigation:
         print("Start informed rrt star planning")
 
         # Obstacle coordinates
-        ox = np.where(self.grid is True)[0].tolist()
-        oy = np.where(self.grid is True)[1].tolist()
+        ox = np.where(self.grid == True)[0].tolist()
+        oy = np.where(self.grid == True)[1].tolist()
 
         # Create obstacle grid which includes the size of the obstacle as a 3rd tuple component
         obstacleList = [(i, j, 1) for i, j in zip(ox, oy)]
@@ -143,8 +144,8 @@ class GridNavigation:
         grid_size = 1
 
         # Coordinates of the obstacles
-        ox = np.where(self.grid is True)[0].tolist()
-        oy = np.where(self.grid is True)[1].tolist()
+        ox = np.where(self.grid == True)[0].tolist()
+        oy = np.where(self.grid == True)[1].tolist()
 
         a_star = AStarPlanner(ox, oy, grid_size, robot_radius)
         rx, ry = a_star.planning(sx, sy, gx, gy, self.plotter_2D)
@@ -180,7 +181,7 @@ class GridNavigation:
         # Obtain the x and y coordinates of the points along the path
         way_point_x = [i[0] for i in path]
         way_point_y = [i[1] for i in path]
-        n_course_point = max(int(len(path)*reduction), 2)  # sampling number
+        n_course_point = max(int(len(path) * reduction), 2)  # sampling number
 
         rax, ray = approximate_b_spline_path(way_point_x, way_point_y,
                                              n_course_point, degree=2)
@@ -210,33 +211,53 @@ class GridNavigation:
 
         return path_a, collision
 
-    def check_collision(self, path):
+    def check_collision(self, path, distanced_obs=True):
         """
         Check whether the proposed path collides with an obstacle. For that purpose, the trajectory is sliced 1000 times
         and it is checked whether the grid cell of any of the points along the sliced path falls on an occupied cell.
         If there is an obstacle, then return True
         :param path: proposed path that the drone must follow
+        :param distanced_obs: whether a minimum distance of 1 cell should be kept from the obstacles
         :return: whether the path collides with an obstacle
         """
         # For each connection between 2 points along the path
-        for i in range(len(path)-1):
+        for i in range(len(path) - 1):
             # Retrieve the 2 points
             local_start = path[i][:2]
-            local_goal = path[i+1][:2]
+            local_goal = path[i + 1][:2]
             # Check whether the trajectory moves only along the y-direction
             if local_goal[0] != local_start[0]:
                 # Obtain the slope of the line connecting both points
-                m = (local_goal[1]-local_start[1])/(local_goal[0]-local_start[0])
-                line_equation = lambda x: m*(x-local_start[0])+local_start[1]
+                m = (local_goal[1] - local_start[1]) / (local_goal[0] - local_start[0])
+                line_equation = lambda x: m * (x - local_start[0]) + local_start[1]
 
-                # Obtain linspace of the x axis
-                x = np.linspace(local_start[0], local_goal[0], 1000)
+                if distanced_obs:
+                    line_equation_parallel_1 = lambda x: m * (x - local_start[0] - 1) + local_start[1]
+                    line_equation_parallel_2 = lambda x: m * (x - local_start[0] + 1) + local_start[1]
 
-                # Obtain the corresponding coordinates in the y-direction
-                y = np.array(list(map(line_equation, x)))
+                    # Obtain linspace of the x axis
+                    x0 = np.linspace(local_start[0], local_goal[0], 1000)
+                    x1 = np.linspace(local_start[0] + 1, local_goal[0] + 1, 1000)
+                    x2 = np.linspace(local_start[0] - 1, local_goal[0] - 1, 1000)
+
+                    # Obtain the corresponding coordinates in the y-direction
+                    y = np.array(list(map(line_equation, x0)) + list(map(line_equation_parallel_1, x1)) + list(
+                        map(line_equation_parallel_2, x2)))
+                    x = np.vstack((x0, x1, x2)).flatten()
+                else:
+                    x = np.linspace(local_start[0], local_goal[0], 1000)
+                    y = np.array(list(map(line_equation, x)))
             else:  # Only slice the y-axis
-                x = np.ones(1000) * local_start[0]
-                y = np.linspace(local_start[1], local_goal[1], 1000)
+                if distanced_obs:
+                    x0 = np.ones(1000) * local_start[0]
+                    x1 = np.ones(1000) * local_start[0] + 1
+                    x2 = np.ones(1000) * local_start[0] - 1
+                    x = np.vstack((x0, x1, x2)).flatten()
+                    y0 = np.linspace(local_start[1], local_goal[1], 1000)
+                    y = np.vstack((y0, y0, y0)).flatten()
+                else:
+                    x = np.ones(1000) * local_start[0]
+                    y = np.linspace(local_start[1], local_goal[1], 1000)
 
             x_int = np.round(x).astype(int)
             y_int = np.round(y).astype(int)
@@ -245,8 +266,9 @@ class GridNavigation:
 
             # Check whether the cells along the trajectory are occupied by an obstacle
             for cell in grids_cells:
-                if self.grid[cell[0], cell[1]]:
-                    return True
+                if self.om.extent_y > cell[1] >= 0 and self.om.extent_x > cell[1] >= 0:
+                    if self.grid[cell[0], cell[1]]:
+                        return True
         return False
 
     def navigation_PRM(self, start, goal, robot_size=3):
@@ -265,8 +287,8 @@ class GridNavigation:
         gy = goal[1]
 
         # Coordinates of the obstacle locations
-        ox = np.where(self.grid is True)[0].tolist()
-        oy = np.where(self.grid is True)[1].tolist()
+        ox = np.where(self.grid == True)[0].tolist()
+        oy = np.where(self.grid == True)[1].tolist()
 
         rx, ry = prm_planning(sx, sy, gx, gy, ox, oy, robot_size, self.plotter_2D)
         path = [(i, j) for i, j in zip(rx, ry)]
@@ -311,4 +333,3 @@ if __name__ == "__main__":
     path, collision = nav.smooth_B_spline(path, reduction=0.2)
     # path = nav.navigation_PRM(args.start, args.goal, args.robot_radius)
     # path = nav.smooth_B_spline(path, reduction=0.5)
-

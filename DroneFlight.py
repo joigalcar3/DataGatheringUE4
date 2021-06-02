@@ -5,6 +5,7 @@ import sys
 import random
 from datetime import datetime
 import keyboard
+import matplotlib.pyplot as plt
 
 from Occupancy_grid.OccupancyMap import OccupancyMap
 from Occupancy_grid.GridNavigation import GridNavigation
@@ -13,6 +14,7 @@ from Occupancy_grid.compute_distance_points import compute_distance_points
 from Occupancy_grid.user_input import load_user_input
 
 # TODO: take into account measurement time when considering the measurement frequency
+# TODO: finish multithreading
 
 
 class DroneFlight:
@@ -23,7 +25,7 @@ class DroneFlight:
     """
     def __init__(self, altitude_m, altitude_range_m, cell_size_m, ue4_airsim_factor, robot_radius_m, sensors,
                  camera_info, sample_rate=25, min_flight_distance_m=30, saved_vertices_filename='object_points',
-                 update_saved_vertices=False, plot2D=False, plot3D=True):
+                 update_saved_vertices=False, plot2D=False, plot3D=True, vehicle_name='', smooth=True):
         self.altitude_m = altitude_m
         self.altitude_range_m = altitude_range_m
         self.cell_size_m = cell_size_m
@@ -32,6 +34,8 @@ class DroneFlight:
         self.update_saved_vertices = update_saved_vertices
         self.plot2D = plot2D
         self.plot3D = plot3D
+        self.vehicle_name = vehicle_name
+        self.smooth = smooth
 
         self.start_grid = None
         self.goal_grid = None
@@ -54,7 +58,7 @@ class DroneFlight:
         self.sensors = sensors
         self.camera_info = camera_info
         self.sample_rate = sample_rate
-        self.sensors = DroneSensors(self.client, self.sensors, self.camera_info)
+        self.sensors = DroneSensors(self.client, self.sensors, self.camera_info, vehicle_name=self.vehicle_name)
 
     def distances_to_ue4(self, distances, altitude_flags):
         """
@@ -92,8 +96,8 @@ class DroneFlight:
         # Connect to the AirSim simulator
         self.client = airsim.MultirotorClient()
         self.client.confirmConnection()
-        self.client.enableApiControl(True)
-        self.client.armDisarm(False)
+        self.client.enableApiControl(True, self.vehicle_name)
+        self.client.armDisarm(False, self.vehicle_name)
 
     def extract_occupancy_map(self, altitude_m=None):
         """
@@ -102,6 +106,7 @@ class DroneFlight:
         :return:
         """
         if altitude_m is not None:
+            self.altitude_m = altitude_m
             self.altitude = self.distance_to_ue4(altitude_m, True)
         # Extract occupancy grid
         self.env_map = OccupancyMap(cell_size=self.cell_size, ue4_airsim_conv=self.ue4_airsim_factor, client=self.client)
@@ -131,7 +136,7 @@ class DroneFlight:
             self.goal_grid = (random.randint(0, x_dim), random.randint(0, y_dim))
         print(self.start_grid, self.goal_grid)
 
-    def navigate_drone_grid(self, navigation_type="A_star", smooth=True, start_point=None, goal_point=None):
+    def navigate_drone_grid(self, navigation_type="A_star", start_point=None, goal_point=None):
         """
         Method which obtains the path of grid points to follow in order to avoid the obstacles. First, the start and
         goal points are created if they have not been provided, then the navigation is computed with the method
@@ -152,7 +157,8 @@ class DroneFlight:
             self.goal_grid = goal_point
 
         # Plot the start and goal points on the 3D grid
-        self.env_map.plot_start_goal_3D_grid(self.start_grid, self.goal_grid)
+        if self.plot3D:
+            self.env_map.plot_start_goal_3D_grid(self.start_grid, self.goal_grid)
 
         # Compute the path with the chosen navigation type
         nav = GridNavigation(self.env_map, self.plot2D, self.plot3D)
@@ -170,7 +176,7 @@ class DroneFlight:
             raise ValueError("Navigation type does not exist.")
 
         # Smoothen the path
-        if smooth:
+        if self.smooth:
             path_or = path.copy()
             success = False
             reduction = 0.05
@@ -186,7 +192,7 @@ class DroneFlight:
                     path = path_or
                     print('Smoothening with a reduction of ' + str(reduction) + ' did not succeed.')
                     reduction += 0.05
-                    reduction = np.round(reduction, 1)
+                    reduction = np.round(reduction, 2)
                     if reduction > 1:
                         print('Smoothening did not succeed.')
 
@@ -204,11 +210,11 @@ class DroneFlight:
         self.sensors.initialize_sensors()
 
         # Teleport drone to the start position
-        pose = self.client.simGetVehiclePose()
+        pose = self.client.simGetVehiclePose(vehicle_name=self.vehicle_name)
         pose.position.x_val = self.start_world[0]
         pose.position.y_val = self.start_world[1]
 
-        self.client.simSetVehiclePose(pose, True)
+        self.client.simSetVehiclePose(pose, True, vehicle_name=self.vehicle_name)
 
     def take_off(self):
         """
@@ -217,34 +223,38 @@ class DroneFlight:
         """
         # Start up the drone
         print("arming the drone...")
-        self.client.armDisarm(True)
+        self.client.armDisarm(True, vehicle_name=self.vehicle_name)
 
         # Check proper take-off
         self.check_take_off()
 
         # AirSim uses NED coordinates so negative axis is up.
         print("make sure we are hovering at " + str(-self.altitude_m) + " meters...")
-        self.client.moveToZAsync(self.altitude_m, 1).join()
+        self.client.moveToZAsync(self.altitude_m, 1, vehicle_name=self.vehicle_name).join()
 
     def check_take_off(self):
         """
         Method that checks that the drone has actually taken off. If not, an error is raised.
         :return:
         """
-        if not self.client.isApiControlEnabled():
-            self.client.enableApiControl(True)
-        state = self.client.getMultirotorState()
+        if not self.client.isApiControlEnabled(vehicle_name=self.vehicle_name):
+            self.client.enableApiControl(True, vehicle_name=self.vehicle_name)
+
+        state = self.client.getMultirotorState(vehicle_name=self.vehicle_name)
         if state.landed_state == airsim.LandedState.Landed:
             print("taking off...")
-            self.client.takeoffAsync().join()
+            time.sleep(1)
+            self.client.takeoffAsync(vehicle_name=self.vehicle_name).join()
         else:
-            self.client.hoverAsync().join()
+            self.client.hoverAsync(vehicle_name=self.vehicle_name).join()
 
+        print("Waiting 2 seconds", self.vehicle_name)
         time.sleep(2)
+        print("Done 2 seconds", self.vehicle_name)
 
-        state = self.client.getMultirotorState()
+        state = self.client.getMultirotorState(vehicle_name=self.vehicle_name)
         if state.landed_state == airsim.LandedState.Landed:
-            print("take off failed...")
+            print("take off failed...", self.vehicle_name)
             sys.exit(1)
 
     def fly_trajectory(self):
@@ -258,7 +268,7 @@ class DroneFlight:
         # self.client.moveOnPathAsync(self.path, 12, 120, airsim.DrivetrainType.ForwardOnly,
         #                             airsim.YawMode(False, 0), 20, 1)
         self.client.moveOnPathAsync(self.path, 12, 120, airsim.DrivetrainType.ForwardOnly,
-                                    airsim.YawMode(False, 0), -1, 0)
+                                    airsim.YawMode(False, 0), -1, 0, vehicle_name=self.vehicle_name)
 
     def check_goal_arrival(self):
         """
@@ -267,7 +277,7 @@ class DroneFlight:
         :return: whether the drone has arrived to its goal
         """
         # Obtain drone location
-        drone_location = self.client.simGetVehiclePose()
+        drone_location = self.client.simGetVehiclePose(vehicle_name=self.vehicle_name)
         real_x = drone_location.position.x_val
         real_y = drone_location.position.y_val
 
@@ -277,7 +287,7 @@ class DroneFlight:
 
         # Compute the distance between both locations
         distance = np.sqrt((goal_x-real_x)**2 + (goal_y-real_y)**2)
-        print('Goal: (' + str(goal_x) + ',' + str(goal_y) +
+        print(self.vehicle_name + '. Goal: (' + str(goal_x) + ',' + str(goal_y) +
               '). Drone location: (' + str(real_x) + ',' + str(real_y) + '). Distance: ' + str(distance) + '.')
 
         # Check whether the distance is less than 2 metres
@@ -303,7 +313,7 @@ class DroneFlight:
         # Once the drone has arrived to its destination, the sensor data is stored in their respective files
         self.sensors.write_to_file()
 
-    def run(self, navigation_type="A_star", start_point=None, goal_point=None):
+    def run(self, navigation_type="A_star", start_point=None, goal_point=None, min_h=None, max_h=None):
         """
         Method that carries out the complete flight of a drone. First, the occupancy map is extracted and the navigation
         of the drone is computed. Then, the drone is teleported to the start, the drone takes-off and flies the
@@ -311,15 +321,23 @@ class DroneFlight:
         :param navigation_type: the type of navigation used
         :param start_point: the start location for the flight
         :param goal_point: the goal location of the flight
+        :param max_h: maximum altitude considered for the flight
+        :param min_h: minimum altitude considered for the flight
         :return:
         """
-        self.extract_occupancy_map()
+        if min_h is not None and max_h is not None:
+            h = -random.randint(min_h, max_h)
+            self.extract_occupancy_map(h)
+        else:
+            self.extract_occupancy_map()
+
         self.navigate_drone_grid(navigation_type=navigation_type, start_point=start_point, goal_point=goal_point)
         self.teleport_drone_start()
+        time.sleep(1)
         self.take_off()
+        time.sleep(2)
         self.fly_trajectory()
         self.obtain_sensor_data()
-        self.client.reset()
 
 
 if __name__ == "__main__":

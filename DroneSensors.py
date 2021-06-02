@@ -13,10 +13,11 @@ class DroneSensors:
     """
     Class that serves as interface between the drone and all the sensors
     """
-    def __init__(self, client, sensors, cameras_info, folder='Sensor_data'):
+    def __init__(self, client, sensors, cameras_info, folder='Sensor_data', vehicle_name=''):
         self.client = client
         self.folder = os.path.join(os.getcwd(), folder)
         self.flight_folder = None
+        self.vehicle_name = vehicle_name
 
         self.sensors = sensors
         self.number_sensors = len(sensors)
@@ -47,7 +48,7 @@ class DroneSensors:
         name_func = 'get' + sensor_type.capitalize() + 'Data'
 
         # Call the function
-        output = getattr(self.client, name_func)()
+        output = getattr(self.client, name_func)(vehicle_name=self.vehicle_name)
         content = output.__dict__
 
         # Obtain the name of all the variables stored in the dictionary.
@@ -65,7 +66,8 @@ class DroneSensors:
         :return:
         """
         for camera in self.cameras_info.keys():
-            self.cameras.append(DroneCamera(camera, self.cameras_info[camera], self.client, self.flight_folder))
+            self.cameras.append(DroneCamera(camera, self.cameras_info[camera], self.client, self.flight_folder,
+                                            vehicle_name=self.vehicle_name))
 
     def initialize_sensors(self):
         """
@@ -73,7 +75,10 @@ class DroneSensors:
         :return:
         """
         # Create the folder where the data of the flight will be saved
-        self.flight_folder = os.path.join(self.folder, time.strftime("%Y%m%d-%H%M%S"))
+        try:
+            self.flight_folder = os.path.join(self.folder, time.strftime("%Y%m%d-%H%M%S")+"_"+self.vehicle_name[-1])
+        except:
+            self.flight_folder = os.path.join(self.folder, time.strftime("%Y%m%d-%H%M%S"))
         os.mkdir(self.flight_folder)
 
         # Initialize all the sensors
@@ -97,7 +102,7 @@ class DroneSensors:
         """
         # Obtain the name of the AirSim method that has to be called
         name_func = 'get' + sensor_type.capitalize() + 'Data'
-        output = getattr(self.client, name_func)()
+        output = getattr(self.client, name_func)(vehicle_name=self.vehicle_name)
         content = output.__dict__
 
         # Obtain the data stored by the tree structured returned by AirSim
@@ -111,7 +116,7 @@ class DroneSensors:
         :return:
         """
         camera_requests = [camera.obtain_camera_image() for camera in self.cameras]
-        responses = self.client.simGetImages(camera_requests)
+        responses = self.client.simGetImages(camera_requests, vehicle_name=self.vehicle_name)
         for i in range(self.number_cameras):
             self.cameras[i].store_camera_image(responses[i])
 
