@@ -14,7 +14,6 @@ from Occupancy_grid.compute_distance_points import compute_distance_points
 from Occupancy_grid.user_input import load_user_input
 
 # TODO: take into account measurement time when considering the measurement frequency
-# TODO: finish multithreading
 
 
 class DroneFlight:
