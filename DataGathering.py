@@ -20,10 +20,13 @@ class DataGathering:
                                         self.args.ue4_airsim_conversion_units, self.args.robot_radius,
                                         self.args.sensors_lst,
                                         self.args.cameras_info,
-                                        self.args.sample_rate, min_flight_distance_m=self.args.min_flight_distance_m,
+                                        sample_rates=self.args.sample_rates,
+                                        min_flight_distance_m=self.args.min_flight_distance_m,
                                         saved_vertices_filename=self.args.saved_vertices_filename,
                                         update_saved_vertices=self.args.update_saved_vertices, plot2D=self.args.plot2D,
-                                        plot3D=self.args.plot3D, vehicle_name=vehicle_name, smooth=self.args.smooth)
+                                        plot3D=self.args.plot3D, vehicle_name=vehicle_name, smooth=self.args.smooth,
+                                        failure_types=self.args.failure_types,
+                                        activate_take_off=self.args.activate_take_off)
 
     def gather_data_consecutive_runs(self):
         """
@@ -38,11 +41,13 @@ class DataGathering:
                                                   start_point=self.args.start, goal_point=self.args.goal)
             self.drone_flight.teleport_drone_start()
             time.sleep(1)
-            self.drone_flight.take_off()
-            time.sleep(2)
+            if self.drone_flight.activate_take_off:
+                self.drone_flight.take_off()
+                time.sleep(2)
+            self.drone_flight.select_failure()
             self.drone_flight.fly_trajectory()
             self.drone_flight.obtain_sensor_data()
-            self.drone_flight.client.reset()
+            self.drone_flight.reset()
 
 
 if __name__ == "__main__":

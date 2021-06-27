@@ -12,6 +12,7 @@ from Occupancy_grid.GridNavigation import GridNavigation
 from Occupancy_grid.DroneSensors import DroneSensors
 from Occupancy_grid.compute_distance_points import compute_distance_points
 from Occupancy_grid.user_input import load_user_input
+from Occupancy_grid.FailureFactory import FailureFactory
 
 # TODO: take into account measurement time when considering the measurement frequency
 
@@ -23,8 +24,9 @@ class DroneFlight:
     the methods in order to make a single flight successful.
     """
     def __init__(self, altitude_m, altitude_range_m, cell_size_m, ue4_airsim_factor, robot_radius_m, sensors,
-                 camera_info, sample_rate=25, min_flight_distance_m=30, saved_vertices_filename='object_points',
-                 update_saved_vertices=False, plot2D=False, plot3D=True, vehicle_name='', smooth=True):
+                 camera_info, sample_rates, min_flight_distance_m=30, saved_vertices_filename='object_points',
+                 update_saved_vertices=False, plot2D=False, plot3D=True, vehicle_name='', smooth=True,
+                 failure_types=None, activate_take_off=True):
         self.altitude_m = altitude_m
         self.altitude_range_m = altitude_range_m
         self.cell_size_m = cell_size_m
@@ -56,8 +58,14 @@ class DroneFlight:
 
         self.sensors = sensors
         self.camera_info = camera_info
-        self.sample_rate = sample_rate
-        self.sensors = DroneSensors(self.client, self.sensors, self.camera_info, vehicle_name=self.vehicle_name)
+        self.sample_rates = sample_rates
+        self.sensors = DroneSensors(self.client, self.sensors, self.camera_info,
+                                    self.sample_rates, vehicle_name=self.vehicle_name)
+
+        self.failure_types = failure_types
+        self.failure_factory = FailureFactory(self.client, self.failure_types)
+
+        self.activate_take_off = activate_take_off
 
     def distances_to_ue4(self, distances, altitude_flags):
         """
@@ -213,6 +221,20 @@ class DroneFlight:
         pose.position.x_val = self.start_world[0]
         pose.position.y_val = self.start_world[1]
 
+        # In the case that it is not desired to carry out the take-off
+        if not self.activate_take_off:
+            # Check that API control is enabled
+            if not self.client.isApiControlEnabled(vehicle_name=self.vehicle_name):
+                self.client.enableApiControl(True, vehicle_name=self.vehicle_name)
+            # Start up the drone
+            print("arming the drone...")
+            self.client.armDisarm(True, vehicle_name=self.vehicle_name)
+
+            # Set up the desired altitude and start hovering the dronein place
+            pose.position.z_val = self.altitude_m
+            self.client.moveToZAsync(self.altitude_m, 0.1, vehicle_name=self.vehicle_name)
+
+        # Move vehicle to desired position
         self.client.simSetVehiclePose(pose, True, vehicle_name=self.vehicle_name)
 
     def take_off(self):
@@ -256,6 +278,25 @@ class DroneFlight:
             print("take off failed...", self.vehicle_name)
             sys.exit(1)
 
+    def select_failure(self):
+        """
+        Function that selects the failure type that will take place during the flight and the moment in time.
+        :return:
+        """
+        # Obtain start location
+        start_x = self.start_world[0]
+        start_y = self.start_world[1]
+
+        # Obtain goal location
+        goal_x = self.goal_world[0]
+        goal_y = self.goal_world[1]
+
+        # Compute the distance between both locations
+        distance = np.sqrt((goal_x-start_x)**2 + (goal_y-start_y)**2)
+
+        # Choose the failure and the location where it should take place
+        self.failure_factory.failure_selection(distance)
+
     def fly_trajectory(self):
         """
         Method that flies the drone along the computed trajectory
@@ -287,30 +328,63 @@ class DroneFlight:
         # Compute the distance between both locations
         distance = np.sqrt((goal_x-real_x)**2 + (goal_y-real_y)**2)
         print(self.vehicle_name + '. Goal: (' + str(goal_x) + ',' + str(goal_y) +
-              '). Drone location: (' + str(real_x) + ',' + str(real_y) + '). Distance: ' + str(distance) + '.')
+              '). Drone location: (' + str(real_x) + ',' + str(real_y) + '). Distance: ' + str(distance) +
+              '. Altitude: ' +
+              str(-self.client.getMultirotorState().kinematics_estimated.position.z_val) +
+              '. Desired altitude: ' + str(-self.altitude_m) + '.')
+
+        # Check whether the drone has collided
+        collision_info = self.client.simGetCollisionInfo()
+        collided = collision_info.has_collided
+        print("Collided: " + str(collided))
+        if collision_info.has_collided:
+            collision_object = collision_info.object_name
+            # Check if it has collided against the ground or an obstacle
+            if collision_object[0:6] == 'Ground':
+                return False, distance, 2
+            else:
+                return False, distance, 1
 
         # Check whether the distance is less than 2 metres
         if distance < 2:
-            return False
-        return True
+            return False, distance, 0
+        return True, distance, 0
 
     def obtain_sensor_data(self):
         """
-        Method that retrieves the data from the sensors given the sample rate.
+        Method that retrieves the data from the sensors given the sample rate and executes the failure.
         :return:
         """
-        # Obtains the sensor data at the specified sample rate as long as the drone has not arrived to its destination
-        while self.check_goal_arrival():
+        not_arrived = True
+        collision_type = 0
+        # While the drone has not reached destination or collided
+        while not_arrived:
             self.sensors.store_sensors_data()
-            time.sleep(1 / self.sample_rate)
+            # time.sleep(1 / self.sample_rate)
             now = datetime.now()
             current_time = now.strftime("%H:%M:%S")
             print("Current Time =", current_time)
+
+            # Obtain the distance to destination
+            not_arrived, distance, collision_type = self.check_goal_arrival()
+            self.failure_factory.execute_failures(distance)
+
+            # Manual break in the collection of data
             if keyboard.is_pressed('K'):
                 break
 
-        # Once the drone has arrived to its destination, the sensor data is stored in their respective files
+        # Once the drone has arrived to its destination, the sensor and failure data is stored in their respective files
+        self.failure_factory.write_to_file(collision_type, self.sensors.folder_name)
         self.sensors.write_to_file()
+
+    def reset(self):
+        """
+        Method that resets the state of the drone in order to carry out a new iteration. For that purpose, it resets the
+        client, as well as returning the damaged coefficients to one.
+        :return:
+        """
+        self.client.reset()
+        self.failure_factory.reset()
 
     def run(self, navigation_type="A_star", start_point=None, goal_point=None, min_h=None, max_h=None):
         """
@@ -333,8 +407,10 @@ class DroneFlight:
         self.navigate_drone_grid(navigation_type=navigation_type, start_point=start_point, goal_point=goal_point)
         self.teleport_drone_start()
         time.sleep(1)
-        self.take_off()
-        time.sleep(2)
+        if self.activate_take_off:
+            self.take_off()
+            time.sleep(2)
+        self.select_failure()
         self.fly_trajectory()
         self.obtain_sensor_data()
 
@@ -348,5 +424,6 @@ if __name__ == "__main__":
                                args.ue4_airsim_conversion_units, args.robot_radius, args.sensors_lst, args.cameras_info,
                                args.sample_rate, min_flight_distance_m=args.min_flight_distance_m,
                                saved_vertices_filename=args.saved_vertices_filename,
-                               update_saved_vertices=args.update_saved_vertices, plot2D=args.plot2D, plot3D=args.plot3D)
+                               update_saved_vertices=args.update_saved_vertices, plot2D=args.plot2D, plot3D=args.plot3D,
+                               failure_types=args.failure_types, activate_take_off=args.activate_take_off)
     drone_flight.run(navigation_type=args.navigation_type, start_point=args.start, goal_point=args.goal)
