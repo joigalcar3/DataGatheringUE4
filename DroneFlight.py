@@ -5,7 +5,7 @@ import sys
 import random
 from datetime import datetime
 import keyboard
-import matplotlib.pyplot as plt
+from icecream import ic
 
 from Occupancy_grid.OccupancyMap import OccupancyMap
 from Occupancy_grid.GridNavigation import GridNavigation
@@ -170,7 +170,7 @@ class DroneFlight:
         # Compute the path with the chosen navigation type
         nav = GridNavigation(self.env_map, self.plot2D, self.plot3D)
         if navigation_type == "A_star":
-            path = nav.navigation_A_start(self.start_grid, self.goal_grid, self.robot_radius)
+            path = nav.navigation_A_star(self.start_grid, self.goal_grid, self.robot_radius)
         elif navigation_type == "wavefront":
             path = nav.navigate_wavefront(self.start_grid, self.goal_grid)
         elif navigation_type == "Voronoid":
@@ -233,6 +233,7 @@ class DroneFlight:
             # Set up the desired altitude and start hovering the dronein place
             pose.position.z_val = self.altitude_m
             self.client.moveToZAsync(self.altitude_m, 0.1, vehicle_name=self.vehicle_name)
+            time.sleep(0.5)
 
         # Move vehicle to desired position
         self.client.simSetVehiclePose(pose, True, vehicle_name=self.vehicle_name)
@@ -348,8 +349,12 @@ class DroneFlight:
         # Check whether the distance is less than 2 metres
         if distance < 2:
             return False, distance, 0
+        # Check whether the drone flies off into the sky
         elif -self.client.getMultirotorState().kinematics_estimated.position.z_val > -3 * self.altitude_m:
             return False, distance, 3
+        # Check whether the drone is on the ground and the collision has not been registered = very smooth landing
+        elif -self.client.getMultirotorState().kinematics_estimated.position.z_val < 0.5:
+            return False, distance, 2
         return True, distance, 0
 
     def obtain_sensor_data(self):
@@ -403,18 +408,21 @@ class DroneFlight:
         if min_h is not None and max_h is not None:
             h = -random.randint(min_h, max_h)
             self.extract_occupancy_map(h)
+            ic(h)
         else:
             self.extract_occupancy_map()
 
         self.navigate_drone_grid(navigation_type=navigation_type, start_point=start_point, goal_point=goal_point)
         self.teleport_drone_start()
-        time.sleep(1)
+        time.sleep(2)
         if self.activate_take_off:
             self.take_off()
             time.sleep(2)
         self.select_failure()
         self.fly_trajectory()
         self.obtain_sensor_data()
+        self.reset(True)
+        time.sleep(2)
 
 
 if __name__ == "__main__":

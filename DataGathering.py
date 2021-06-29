@@ -1,7 +1,7 @@
+import sys
+from icecream import ic
 from Occupancy_grid.user_input import load_user_input
 from Occupancy_grid.DroneFlight import DroneFlight
-import random
-import time
 
 
 class DataGathering:
@@ -35,23 +35,17 @@ class DataGathering:
         """
         self.drone_flight.client.reset(True)
         for run in range(self.number_runs):
-            h = -random.randint(self.flight_altitudes[0], self.flight_altitudes[1])
-            print("Altitude: ", h)
-            self.drone_flight.extract_occupancy_map(h)
-            self.drone_flight.navigate_drone_grid(navigation_type=self.navigation_type,
-                                                  start_point=self.args.start, goal_point=self.args.goal)
-            self.drone_flight.teleport_drone_start()
-            time.sleep(1)
-            if self.drone_flight.activate_take_off:
-                self.drone_flight.take_off()
-                time.sleep(2)
-            self.drone_flight.select_failure()
-            self.drone_flight.fly_trajectory()
-            self.drone_flight.obtain_sensor_data()
-            self.drone_flight.reset(True)
-            time.sleep(2)
+            self.drone_flight.run(navigation_type=self.navigation_type, start_point=self.args.start,
+                                  goal_point=self.args.goal, min_h=self.flight_altitudes[0],
+                                  max_h=self.flight_altitudes[1])
 
 
 if __name__ == "__main__":
+    gettrace = getattr(sys, 'gettrace', None)
+    if gettrace():
+        ic.enable()
+    else:
+        ic.disable()
+
     data_gathering = DataGathering(vehicle_name='Drone1')
     data_gathering.gather_data_consecutive_runs()

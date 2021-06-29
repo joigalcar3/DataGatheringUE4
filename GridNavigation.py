@@ -127,7 +127,7 @@ class GridNavigation:
         print('RRT_star path has been computed')
         return path
 
-    def navigation_A_start(self, start, goal, robot_radius=3):
+    def navigation_A_star(self, start, goal, robot_radius=3):
         """
         A*  navigation as explained in https://pythonrobotics.readthedocs.io/en/latest/
         :param start: start location
@@ -266,7 +266,7 @@ class GridNavigation:
 
             # Check whether the cells along the trajectory are occupied by an obstacle
             for cell in grids_cells:
-                if self.om.extent_y > cell[1] >= 0 and self.om.extent_x > cell[1] >= 0:
+                if self.om.extent_x > cell[0] >= 0 and self.om.extent_y > cell[1] >= 0:
                     if self.grid[cell[0], cell[1]]:
                         return True
         return False

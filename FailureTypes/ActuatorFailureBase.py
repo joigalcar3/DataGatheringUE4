@@ -11,14 +11,6 @@ class ActuatorFailureBase(abc.ABC):
     propeller_names = ["front_right", "back_left", "front_left", "back_right"]  # name of each propeller
     failure_time_mode_names = ["Abrupt", "Linear"]  # Name of the failure mode depending of its behaviour along time
     continuity_names = ["Discrete", "Continuous"]   # Name of the failure mode depending on the failure available coeffs
-
-    # The next dictionary defines the number of elements used in the printing statement
-    full_failure_names = {
-        "prop_fly_off": ["Propeller Fly Off", 2],
-        "prop_damage": ["Propeller Damage", 4],
-        "actuator_saturation": ["Saturation", 2],
-        "actuator_locked": ["Actuator Locked", 4]
-    }
     step = 1
     min_time_modality = 5     # In the case of linearly changing coefficient, minimum slope
     max_time_modality = 15    # In the case of linearly changing coefficient, maximum slope
@@ -41,9 +33,19 @@ class ActuatorFailureBase(abc.ABC):
         """
         pass
 
-    def __init__(self, continuous=False, time_modality=0):
+    @property
+    @abc.abstractmethod
+    def print_failure_args(self):
+        """
+        Member that contains information important for the printing.
+        :return:
+        """
+        pass
+
+    def __init__(self, continuous=False, time_modality=0, lock_damage=None):
         self.continuous = continuous
         self.time_modality = time_modality  # 0 is no linear change, 1 is linear change and 2 is mixed
+        self.lock_damage = lock_damage  # Whether the failures uses a loss of thrust or stuck actuator
 
         # If the time modality is mixed, next is chosen whether the failure is abrupt or linear
         if self.time_modality == 2:
@@ -51,19 +53,34 @@ class ActuatorFailureBase(abc.ABC):
         else:
             self.time_modality_local = self.time_modality
 
+        # Members related to linear failures
         self.linear_slope = None
         self.sign_gradient = None
         self.last_timestamp = None
         self.start_failure_timestamp = None
-
-        self.propeller = None
-        self.thrust_coefficient_final = None
-        self.magnitude_final = None
-        self.thrust_coefficient = None
         self.start_pwm = None
+
+        # Members related to the mode chosen
+        self.propeller = None
+        self.magnitude_final = None
         self.mode = None
 
+        if self.lock_damage == "damage":
+            # Members related to damage coefficients
+            self.thrust_coefficient_final = None
+            self.thrust_coefficient = None
+            self.damage_coeff = [1] * 4
+        elif self.lock_damage == "lock":
+            # Members related to the locking of propellers
+            self.lock_coefficient_final = None
+            self.lock_coefficient = None
+            self.lock_prop = [False] * 4
+            self.lock_prop_coeff = [0] * 4
+
+        # Members related to AirSim
         self.client = None
+
+        # Member that store the number of calls of a method
         self.activated = False
 
     @abc.abstractmethod
@@ -135,7 +152,7 @@ class ActuatorFailureBase(abc.ABC):
         self.mode = failure_mode
         self.define_mode()
         if 0 <= self.propeller <= 3:
-            full_name, number_args = self.full_failure_names[self.name]
+            full_name, number_args = self.print_failure_args
             if number_args == 2:
                 mode_text = "{} {} {}".format(self.propeller_names[self.propeller],
                                               full_name,

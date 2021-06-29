@@ -11,7 +11,7 @@ def load_user_input():
     """
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--altitude_m', type=int, default=-11, help='Drone flight altitude: m')
+    parser.add_argument('--altitude_m', type=int, default=0, help='Drone flight altitude: m')
     parser.add_argument('--altitude_range_m', type=int, default=3,
                         help='Altitude range to slice the cloud of points: m')
     parser.add_argument('--cell_size_m', type=int, default=3, help='Grid cell size: m')
@@ -40,13 +40,13 @@ def load_user_input():
                                                    'gps': 50, 'barometer': 50},
                         help='Sampling rate for the sensors. Except the camera, the default sampling rates are'
                              ' from the original c++ code, in the simpleParams files for each sensor.')
-    parser.add_argument('--number_runs', type=int, default=10,
+    parser.add_argument('--number_runs', type=int, default=50,
                         help='Number of runs to be performed')
     parser.add_argument('--navigation_type', type=str, default="A_star",
                         help='Method employed for navigation: A_star, wavefront, Voronoid, RRT_star and PRM')
-    parser.add_argument('--flight_altitudes', default=[2, 11],
+    parser.add_argument('--flight_altitudes', default=[3, 11],
                         help="Range of altitudes at which the drone could be spawned")
-    parser.add_argument('--failure_types', default=['prop_damage_dis_abr'],
+    parser.add_argument('--failure_types', default=[],
                         help="Failures types considered during the flight. Options listed in the Failure Factory. It"
                              "needs to be followed by dis or con, which tells the factory the number of options"
                              "considered for failure and abr or lin, which tells the factory the time component of the "
