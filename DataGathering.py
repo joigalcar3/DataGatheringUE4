@@ -33,6 +33,7 @@ class DataGathering:
         Prepares and launches the required flights according to the number of runs specified.
         :return:
         """
+        self.drone_flight.client.reset(True)
         for run in range(self.number_runs):
             h = -random.randint(self.flight_altitudes[0], self.flight_altitudes[1])
             print("Altitude: ", h)
@@ -47,7 +48,8 @@ class DataGathering:
             self.drone_flight.select_failure()
             self.drone_flight.fly_trajectory()
             self.drone_flight.obtain_sensor_data()
-            self.drone_flight.reset()
+            self.drone_flight.reset(True)
+            time.sleep(2)
 
 
 if __name__ == "__main__":

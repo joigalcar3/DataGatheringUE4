@@ -3,11 +3,9 @@ import os
 import csv
 import time
 from Occupancy_grid.FailureTypes.PropFlyOff import PropFlyOff
-from Occupancy_grid.FailureTypes.PropDamageDis import PropDamageDis
-from Occupancy_grid.FailureTypes.PropDamageCon import PropDamageCon
+from Occupancy_grid.FailureTypes.PropDamage import PropDamage
 from Occupancy_grid.FailureTypes.ActuatorSaturation import ActuatorSaturation
-from Occupancy_grid.FailureTypes.ActuatorLockedDis import ActuatorLockedDis
-from Occupancy_grid.FailureTypes.ActuatorLockedCon import ActuatorLockedCon
+from Occupancy_grid.FailureTypes.ActuatorLocked import ActuatorLocked
 
 
 class FailureFactory:
@@ -29,18 +27,17 @@ class FailureFactory:
     # Dictionary with all the available failures
     failure_factory = {
         "prop_fly_off": PropFlyOff,
-        "prop_damage_dis": PropDamageDis,
-        "prop_damage_con": PropDamageCon,
+        "prop_damage": PropDamage,
         "actuator_saturation": ActuatorSaturation,
-        "actuator_locked_dis": ActuatorLockedDis,
-        "actuator_locked_con": ActuatorLockedCon
+        "actuator_locked": ActuatorLocked
     }
     # Name of the folder where the available failures are stored
     folder_name = "Flight_info/"
 
     # Information that the flight info file stores
     header = ['Iteration', "Sensor_folder", "Start_timestamp", "End_timestamp", "Failure", "Failure_type",
-              "Failure_mode", "Failure_mode_local", "Failure_timestamp", "Distance", "Percent_trip", "Collision_type"]
+              "Failure_mode", "Failure_mode_local", "Failure_magnitude", "Magnitude_start", "Time_linear_slope",
+              "Continuity", "Time_modality", "Failure_timestamp", "Distance", "Percent_trip", "Collision_type"]
 
     def __init__(self, client, failure_types):
         self.client = client
@@ -52,13 +49,17 @@ class FailureFactory:
         self.failure_modes_lst = [self.failure_modes]
 
         # Collect all the failure modes from the chosen failure types
-        for failure_name in self.failure_types:
+        for chosen_failures in self.failure_types:
+            failure_name = chosen_failures[0:-8]
+            continuity = chosen_failures[-7:-4]
             failure = self.failure_factory[failure_name]
-            self.failure_modes += failure.failure_options
+            self.failure_modes += failure.failure_options[continuity]
             self.failure_modes_lst.append(self.failure_modes)
         self.chosen_failure = None        # It will store the chosen failure object of the iteration
         self.chosen_mode = None           # It will store the chosen failure mode of the iteration
         self.local_failure_mode = None    # It will store the chosen failure mode of the iteration in the local failure
+        self.time_mode = None             # It will store whether the failure happens abruptly or linearly
+        self.continuity = None  # Whether the failure has coefficients from a discrete set (dis) or from a range (con)
         self.injection_distance = None    # It will store the distance from the goal at which the failure is injected
         self.total_distance = None        # It will store the total distance that the drone will fly in the iteration
         self.iteration = 1                # The iteration counter
@@ -68,7 +69,6 @@ class FailureFactory:
         self.initialise_failure_file()
 
         self.start_timestamp = None       # Timestamp at which the iteration is started
-        self.failure_timestamp = None     # Timestamp at which the failure takes place
         self.end_timestamp = None         # Timestamp at which the iteration is concluded
 
     def initialise_failure_file(self):
@@ -87,6 +87,25 @@ class FailureFactory:
             # write the header
             writer.writerow(self.header)
 
+    def time_continuity_conversion(self, continuity, time_mode):
+        """
+        Method which translates information contained in the failure name to accepted arguments by the failures.
+        :param continuity: whether the failure has discrete or continuous failure coefficients
+        :param time_mode: whether the failure is abrupt or linear.
+        :return: the transformed continuity and time_mode variables
+        """
+        if continuity == "con":
+            continuity = True
+        elif continuity == "dis":
+            continuity = False
+        if time_mode == "abr":
+            time_mode = 0
+        elif time_mode == "lin":
+            time_mode = 1
+        elif time_mode == "mix":
+            time_mode = 2
+        return continuity, time_mode
+
     def failure_selection(self, distance):
         """
         Function that selects the failure type, the failure mode and the location along the flight in which it will
@@ -98,7 +117,11 @@ class FailureFactory:
         if self.chosen_mode != 1:
             index = [i for i in range(len(self.failure_modes_lst))
                      if self.failure_modes_lst[i] < self.chosen_mode][-1]
-            self.chosen_failure = self.failure_factory[self.failure_types[index]]
+            failure_name = self.failure_types[index][0:-8]
+            continuity = self.failure_types[index][-7:-4]
+            time_mode = self.failure_types[index][-3:]
+            self.continuity, self.time_mode = self.time_continuity_conversion(continuity, time_mode)
+            self.chosen_failure = self.failure_factory[failure_name](self.continuity, self.time_mode)
             self.local_failure_mode = self.chosen_mode - self.failure_modes_lst[index]
             self.injection_distance = random.randint(5, int(distance) - 5)
             self.total_distance = distance
@@ -115,8 +138,7 @@ class FailureFactory:
         :return: None
         """
         if self.chosen_mode != 1 and distance <= self.injection_distance:
-            self.failure_timestamp = self.client.getMultirotorState().timestamp
-            self.chosen_failure.activate_failure(self.client, self.local_failure_mode)
+            self.chosen_failure.activate_failure()
 
     def print_failure(self):
         """
@@ -124,8 +146,8 @@ class FailureFactory:
         :return: None
         """
         chosen_failure = "Chosen failure: " + self.chosen_failure.name
-        chosen_mode = "Chosen mode: " + self.chosen_failure.mode_printer(self.local_failure_mode)
-        chosen_distance = "Chosen distance: " + str(self.injection_distance) + "/" + str(round(self.total_distance,2)) \
+        chosen_mode = "Chosen mode: " + self.chosen_failure.mode_printer(self.client, self.local_failure_mode)
+        chosen_distance = "Chosen distance: " + str(self.injection_distance) + "/" + str(round(self.total_distance, 2))\
                           + ". At " + str(round(100 * (1 - self.injection_distance / self.total_distance), 2)) \
                           + "% of the complete trip."
         print(chosen_failure)
@@ -150,11 +172,21 @@ class FailureFactory:
             row["Failure_type"] = self.chosen_failure.name
             row["Failure_mode"] = self.chosen_mode
             row["Failure_mode_local"] = self.local_failure_mode
-            row["Failure_timestamp"] = self.failure_timestamp
+            row["Failure_magnitude"] = self.chosen_failure.magnitude_final
+            row["Magnitude_start"] = self.chosen_failure.start_pwm
+            if self.chosen_failure.time_modality_local == 1:
+                row["Time_linear_slope"] = self.chosen_failure.linear_slope
+            else:
+                row["Time_linear_slope"] = -1
+            row["Continuity"] = self.continuity
+            row["Time_modality"] = self.chosen_failure.time_modality_local
+            row["Failure_timestamp"] = self.chosen_failure.start_failure_timestamp
             row["Distance"] = self.injection_distance
+
+            # Percentage of the trip already flown when the failure takes place.
             row["Percent_trip"] = 1 - self.injection_distance / self.total_distance
 
-            # Type of collision: 0=no collision, 1=collision with obstacle, 2=collision with ground
+            # Type of collision: 0=no collision, 1=collision with obstacle, 2=collision with ground, 3=fly away
             row["Collision_type"] = collision_type
         return row
 
@@ -180,11 +212,12 @@ class FailureFactory:
         self.chosen_failure = None
         self.chosen_mode = None
         self.local_failure_mode = None
+        self.time_mode = None
+        self.continuity = None
         self.injection_distance = None
         self.total_distance = None
 
         self.start_timestamp = None
-        self.failure_timestamp = None
         self.end_timestamp = None
 
         self.iteration += 1

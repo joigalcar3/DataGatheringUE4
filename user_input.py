@@ -46,8 +46,11 @@ def load_user_input():
                         help='Method employed for navigation: A_star, wavefront, Voronoid, RRT_star and PRM')
     parser.add_argument('--flight_altitudes', default=[2, 11],
                         help="Range of altitudes at which the drone could be spawned")
-    parser.add_argument('--failure_types', default=['prop_damage_dis'],
-                        help="Failures types considered during the flight. Options listed in the Failure Factory.")
+    parser.add_argument('--failure_types', default=['prop_damage_dis_abr'],
+                        help="Failures types considered during the flight. Options listed in the Failure Factory. It"
+                             "needs to be followed by dis or con, which tells the factory the number of options"
+                             "considered for failure and abr or lin, which tells the factory the time component of the "
+                             "failure.")
     parser.add_argument('--activate_take_off', type=bool, default=False,
                         help="Whether the take-off should be activated.")
 

@@ -5,7 +5,7 @@ import airsim
 class FailureBase(abc.ABC):
     @staticmethod
     @abc.abstractmethod
-    def activate_failure(client: airsim.MultirotorClient, failure_mode: int) -> None:
+    def activate_failure() -> None:
         """
         Method which injects the failure.
         :param client: the airsim client
@@ -17,7 +17,7 @@ class FailureBase(abc.ABC):
 
     @staticmethod
     @abc.abstractmethod
-    def mode_printer(mode: int) -> str:
+    def mode_printer(client: airsim.MultirotorClient, failure_mode: int) -> str:
         """
         Method which prints information about the chosen failure mode.
         :param mode: the chosen mode of failure within the current failure type.

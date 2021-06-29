@@ -348,6 +348,8 @@ class DroneFlight:
         # Check whether the distance is less than 2 metres
         if distance < 2:
             return False, distance, 0
+        elif -self.client.getMultirotorState().kinematics_estimated.position.z_val > -3 * self.altitude_m:
+            return False, distance, 3
         return True, distance, 0
 
     def obtain_sensor_data(self):
@@ -377,13 +379,13 @@ class DroneFlight:
         self.failure_factory.write_to_file(collision_type, self.sensors.folder_name)
         self.sensors.write_to_file()
 
-    def reset(self):
+    def reset(self, reset_failures_airsim: bool = False):
         """
         Method that resets the state of the drone in order to carry out a new iteration. For that purpose, it resets the
         client, as well as returning the damaged coefficients to one.
         :return:
         """
-        self.client.reset()
+        self.client.reset(reset_failures_airsim)
         self.failure_factory.reset()
 
     def run(self, navigation_type="A_star", start_point=None, goal_point=None, min_h=None, max_h=None):
