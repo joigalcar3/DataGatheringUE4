@@ -1,7 +1,7 @@
 import random
 from icecream import ic
 
-from Occupancy_grid.FailureTypes.FailureBase import FailureBase
+from Occupancy_grid.FailureTypes.ActuatorFailureBase import FailureBase
 
 
 class PropDamage(FailureBase):

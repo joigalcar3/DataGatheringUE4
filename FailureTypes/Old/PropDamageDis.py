@@ -1,4 +1,4 @@
-from Occupancy_grid.FailureTypes.FailureBase import FailureBase
+from Occupancy_grid.FailureTypes.ActuatorFailureBase import FailureBase
 
 
 class PropDamageDis(FailureBase):
