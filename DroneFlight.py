@@ -25,8 +25,10 @@ class DroneFlight:
     """
     def __init__(self, altitude_m, altitude_range_m, cell_size_m, ue4_airsim_factor, robot_radius_m, sensors,
                  camera_info, sample_rates, min_flight_distance_m=30, saved_vertices_filename='object_points',
-                 update_saved_vertices=False, plot2D=False, plot3D=True, vehicle_name='', smooth=True,
-                 failure_types=None, activate_take_off=True):
+                 update_saved_vertices=False, plot2D=False, plot3D=True, vehicle_name='', vehicle_start_position=None,
+                 smooth=True, failure_types=None, activate_take_off=True):
+        if vehicle_start_position is None:
+            vehicle_start_position = (0, 0, 0)
         self.altitude_m = altitude_m
         self.altitude_range_m = altitude_range_m
         self.cell_size_m = cell_size_m
@@ -36,6 +38,7 @@ class DroneFlight:
         self.plot2D = plot2D
         self.plot3D = plot3D
         self.vehicle_name = vehicle_name
+        self.vehicle_start_position = vehicle_start_position
         self.smooth = smooth
 
         self.start_grid = None
@@ -63,7 +66,7 @@ class DroneFlight:
                                     self.sample_rates, vehicle_name=self.vehicle_name)
 
         self.failure_types = failure_types
-        self.failure_factory = FailureFactory(self.client, self.failure_types)
+        self.failure_factory = FailureFactory(self.client, self.failure_types, vehicle_name=self.vehicle_name)
 
         self.activate_take_off = activate_take_off
 
@@ -94,6 +97,37 @@ class DroneFlight:
             factor = -1
         ue4_distance = factor * int(distance * self.ue4_airsim_factor)  # [UE4_units]
         return ue4_distance
+
+    def positions_world_to_drone_frame(self, positions):
+        """
+        Method which takes a list of points and feeds them to the world2drone frame transformer.
+        :param positions: list of points in the world reference frame
+        :return: list of points in the drone reference frame
+        """
+        transformed_positions = []
+        for position in positions:
+            transformed_positions.append(self.position_world_to_drone_frame(position))
+        return transformed_positions
+
+    def position_world_to_drone_frame(self, position):
+        """
+        It has been observed that if the drone is not initialised at [0,0,0], then there is a shift between the world
+        and the drone coordinate system. This method aims at correcting that error, since some functions such as
+        self.client.simSetVehiclePose() require drone frame coordinates.
+        :param position: the position in the world reference frame
+        :return: position in the drone reference frame
+        """
+        drone_frame_position_x = round(position[0] - self.vehicle_start_position[0], 2)
+        drone_frame_position_y = round(position[1] - self.vehicle_start_position[1], 2)
+        if len(position) == 3:
+            drone_frame_position_z = round(position[2] - self.vehicle_start_position[2], 2)
+            new_pos = (drone_frame_position_x, drone_frame_position_y, drone_frame_position_z)
+        elif len(position) == 2:
+            new_pos = (drone_frame_position_x, drone_frame_position_y)
+        else:
+            message = 'The function position_world_to_drone_frame only accepts positions in 2d or 3d.'
+            raise ValueError(message)
+        return new_pos
 
     def connect_airsim(self):
         """
@@ -204,9 +238,12 @@ class DroneFlight:
                         print('Smoothening did not succeed.')
 
         # Translate the path to AirSim coordinates and save the AirSim coordinates of the start and goal locations
-        self.path = self.env_map.translate_path_to_world_coord(path, self.altitude)
-        self.start_world = self.env_map.translate_point_to_world_coord(self.start_grid, 0)
-        self.goal_world = self.env_map.translate_point_to_world_coord(self.goal_grid, 0)
+        self.path = self.env_map.translate_path_lst_to_Vector3r(
+            self.positions_world_to_drone_frame(self.env_map.translate_path_to_world_coord(path, self.altitude)))
+        self.start_world = self.position_world_to_drone_frame(
+            self.env_map.translate_point_to_world_coord(self.start_grid, 0))
+        self.goal_world = self.position_world_to_drone_frame(
+            self.env_map.translate_point_to_world_coord(self.goal_grid, 0))
 
     def teleport_drone_start(self):
         """
@@ -230,7 +267,7 @@ class DroneFlight:
             print("arming the drone...")
             self.client.armDisarm(True, vehicle_name=self.vehicle_name)
 
-            # Set up the desired altitude and start hovering the dronein place
+            # Set up the desired altitude and start hovering the drone in place
             pose.position.z_val = self.altitude_m
             self.client.moveToZAsync(self.altitude_m, 0.1, vehicle_name=self.vehicle_name)
             time.sleep(0.5)
@@ -331,11 +368,11 @@ class DroneFlight:
         print(self.vehicle_name + '. Goal: (' + str(goal_x) + ',' + str(goal_y) +
               '). Drone location: (' + str(real_x) + ',' + str(real_y) + '). Distance: ' + str(distance) +
               '. Altitude: ' +
-              str(-self.client.getMultirotorState().kinematics_estimated.position.z_val) +
+              str(-self.client.getMultirotorState(vehicle_name=self.vehicle_name).kinematics_estimated.position.z_val) +
               '. Desired altitude: ' + str(-self.altitude_m) + '.')
 
         # Check whether the drone has collided
-        collision_info = self.client.simGetCollisionInfo()
+        collision_info = self.client.simGetCollisionInfo(vehicle_name=self.vehicle_name)
         collided = collision_info.has_collided
         print("Collided: " + str(collided))
         if collision_info.has_collided:
@@ -350,10 +387,11 @@ class DroneFlight:
         if distance < 2:
             return False, distance, 0
         # Check whether the drone flies off into the sky
-        elif -self.client.getMultirotorState().kinematics_estimated.position.z_val > -3 * self.altitude_m:
+        elif -self.client.getMultirotorState(vehicle_name=self.vehicle_name).kinematics_estimated.position.z_val > \
+                -3 * self.altitude_m:
             return False, distance, 3
         # Check whether the drone is on the ground and the collision has not been registered = very smooth landing
-        elif -self.client.getMultirotorState().kinematics_estimated.position.z_val < 0.5:
+        elif -self.client.getMultirotorState(vehicle_name=self.vehicle_name).kinematics_estimated.position.z_val < 0.75:
             return False, distance, 2
         return True, distance, 0
 
@@ -393,7 +431,8 @@ class DroneFlight:
         self.client.reset(reset_failures_airsim)
         self.failure_factory.reset()
 
-    def run(self, navigation_type="A_star", start_point=None, goal_point=None, min_h=None, max_h=None):
+    def run(self, navigation_type="A_star", start_point=None, goal_point=None, min_h=None, max_h=None,
+            activate_reset=True):
         """
         Method that carries out the complete flight of a drone. First, the occupancy map is extracted and the navigation
         of the drone is computed. Then, the drone is teleported to the start, the drone takes-off and flies the
@@ -403,6 +442,7 @@ class DroneFlight:
         :param goal_point: the goal location of the flight
         :param max_h: maximum altitude considered for the flight
         :param min_h: minimum altitude considered for the flight
+        :param activate_reset: whether the airsim client needs to be reseted after the run
         :return:
         """
         if min_h is not None and max_h is not None:
@@ -421,7 +461,8 @@ class DroneFlight:
         self.select_failure()
         self.fly_trajectory()
         self.obtain_sensor_data()
-        self.reset(True)
+        if activate_reset:
+            self.reset(True)
         time.sleep(2)
 
 

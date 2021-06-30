@@ -12,8 +12,8 @@ class ActuatorSaturation(ActuatorLocked):
     name = "actuator_saturation"  # Name of the current failure type
     print_failure_args = ["Saturation", 2]
 
-    def __init__(self, continuous=False, time_modality=0):
-        super().__init__(continuous, time_modality)
+    def __init__(self, continuous=False, time_modality=0, vehicle_name=''):
+        super().__init__(continuous, time_modality, vehicle_name)
 
     def define_mode(self):
         """

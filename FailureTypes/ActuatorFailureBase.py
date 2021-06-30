@@ -42,9 +42,10 @@ class ActuatorFailureBase(abc.ABC):
         """
         pass
 
-    def __init__(self, continuous=False, time_modality=0, lock_damage=None):
+    def __init__(self, continuous=False, time_modality=0, vehicle_name='', lock_damage=None):
         self.continuous = continuous
         self.time_modality = time_modality  # 0 is no linear change, 1 is linear change and 2 is mixed
+        self.vehicle_name = vehicle_name
         self.lock_damage = lock_damage  # Whether the failures uses a loss of thrust or stuck actuator
 
         # If the time modality is mixed, next is chosen whether the failure is abrupt or linear

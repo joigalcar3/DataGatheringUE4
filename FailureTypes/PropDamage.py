@@ -22,8 +22,8 @@ class PropDamage(ActuatorFailureBase):
     name = "prop_damage"  # Name of the current failure type
     print_failure_args = ["Propeller Damage", 4]
 
-    def __init__(self, continuous=False, time_modality=0):
-        super().__init__(continuous, time_modality, "damage")
+    def __init__(self, continuous=False, time_modality=0, vehicle_name=''):
+        super().__init__(continuous, time_modality, vehicle_name, "damage")
 
     def abrupt_failure(self):
         """
@@ -31,21 +31,21 @@ class PropDamage(ActuatorFailureBase):
         :return:
         """
         self.damage_coeff[self.propeller] = self.thrust_coefficient_final
-        self.client.setDamageCoefficients(*self.damage_coeff)
+        self.client.setDamageCoefficients(*self.damage_coeff, vehicle_name=self.vehicle_name)
 
     def linear_failure(self):
         """
         Method which defines the changes in the case that the failure is linear
         :return:
         """
-        time_now = self.client.getMultirotorState().timestamp
+        time_now = self.client.getMultirotorState(vehicle_name=self.vehicle_name).timestamp
         time_passed = time_now - self.last_timestamp
         gradient = time_passed / self.UE4_second * self.linear_slope
 
         self.thrust_coefficient = max(self.thrust_coefficient + self.sign_gradient * gradient,
                                       self.thrust_coefficient_final)
         self.damage_coeff[self.propeller] = self.thrust_coefficient
-        self.client.setDamageCoefficients(*self.damage_coeff)
+        self.client.setDamageCoefficients(*self.damage_coeff, vehicle_name=self.vehicle_name)
         self.last_timestamp = time_now
         ic(self.thrust_coefficient)
 
@@ -56,7 +56,7 @@ class PropDamage(ActuatorFailureBase):
         of the change, whether the lock coefficient needs to be increased or decreased.
         :return:
         """
-        self.last_timestamp = self.client.getMultirotorState().timestamp
+        self.last_timestamp = self.client.getMultirotorState(vehicle_name=self.vehicle_name).timestamp
         self.linear_slope = round(random.randrange(self.min_time_modality, self.max_time_modality, 1) / 100, 2)
         self.thrust_coefficient = 1
         self.sign_gradient = -1
@@ -68,8 +68,8 @@ class PropDamage(ActuatorFailureBase):
         controller but is controlled by the lock propeller coefficient.
         :return:
         """
-        self.start_failure_timestamp = self.client.getMultirotorState().timestamp
-        self.start_pwm = self.client.getMotorPWMs()[self.propeller_names[self.propeller]]
+        self.start_failure_timestamp = self.client.getMultirotorState(vehicle_name=self.vehicle_name).timestamp
+        self.start_pwm = self.client.getMotorPWMs(vehicle_name=self.vehicle_name)[self.propeller_names[self.propeller]]
         ic(self.start_pwm)
 
     def define_mode(self):

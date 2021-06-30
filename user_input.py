@@ -46,7 +46,7 @@ def load_user_input():
                         help='Method employed for navigation: A_star, wavefront, Voronoid, RRT_star and PRM')
     parser.add_argument('--flight_altitudes', default=[3, 11],
                         help="Range of altitudes at which the drone could be spawned")
-    parser.add_argument('--failure_types', default=[],
+    parser.add_argument('--failure_types', default=["prop_fly_off_dis_abr", "actuator_saturation_dis_abr"],
                         help="Failures types considered during the flight. Options listed in the Failure Factory. It"
                              "needs to be followed by dis or con, which tells the factory the number of options"
                              "considered for failure and abr or lin, which tells the factory the time component of the "
@@ -57,8 +57,8 @@ def load_user_input():
     return parser.parse_args()
 
 
-import airsim
-import time
+# import airsim
+# import time
 
 # client = airsim.MultirotorClient()
 # before = client.getMultirotorState().timestamp

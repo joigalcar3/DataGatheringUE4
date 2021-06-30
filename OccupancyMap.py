@@ -284,8 +284,7 @@ class OccupancyMap:
 
     def translate_path_to_world_coord(self, path, h):
         """
-        Translates a path of points in grid coordinates to Airsim coordinates and encapsulates them in airsim.Vector3r
-        objects
+        Translates a path of points in grid coordinates to world coordinates
         :param path: path of points that the drone must follow
         :param h: altitude at which the drone is going to fly
         :return world_waypoints: list of points in AirSim coordinates that the drone is going to follow
@@ -293,9 +292,21 @@ class OccupancyMap:
         world_waypoints = []
         for point in path:
             coord = self.translate_point_to_world_coord(point, h)
-            point_vec = airsim.Vector3r(coord[0], coord[1], coord[2])
-            world_waypoints.append(point_vec)
+            world_waypoints.append(coord)
         return world_waypoints
+
+    def translate_path_lst_to_Vector3r(self, path):
+        """
+        Translates a path composed of points in list format to a list of points in Vector3r format (AirSim coordinates)
+        encapsulating them in an airsim.Vector3r object
+        :param path: path of coordinates
+        :return:
+        """
+        Vector3r_waypoints = []
+        for point in path:
+            point_vec = airsim.Vector3r(point[0], point[1], point[2])
+            Vector3r_waypoints.append(point_vec)
+        return Vector3r_waypoints
 
     def translate_point_to_world_coord(self, point, h):
         """

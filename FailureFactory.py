@@ -39,8 +39,9 @@ class FailureFactory:
               "Failure_mode", "Failure_mode_local", "Failure_magnitude", "Magnitude_start", "Time_linear_slope",
               "Continuity", "Time_modality", "Failure_timestamp", "Distance", "Percent_trip", "Collision_type"]
 
-    def __init__(self, client, failure_types):
+    def __init__(self, client, failure_types, vehicle_name=''):
         self.client = client
+        self.vehicle_name = vehicle_name
         if failure_types is not None:
             self.failure_types = failure_types
         else:
@@ -121,14 +122,15 @@ class FailureFactory:
             continuity = self.failure_types[index][-7:-4]
             time_mode = self.failure_types[index][-3:]
             self.continuity, self.time_mode = self.time_continuity_conversion(continuity, time_mode)
-            self.chosen_failure = self.failure_factory[failure_name](self.continuity, self.time_mode)
+            self.chosen_failure = self.failure_factory[failure_name](self.continuity, self.time_mode,
+                                                                     vehicle_name=self.vehicle_name)
             self.local_failure_mode = self.chosen_mode - self.failure_modes_lst[index]
             self.injection_distance = random.randint(5, int(distance) - 5)
             self.total_distance = distance
             self.print_failure()
         else:
             print("No failure will be injected.")
-        self.start_timestamp = self.client.getMultirotorState().timestamp
+        self.start_timestamp = self.client.getMultirotorState(vehicle_name=self.vehicle_name).timestamp
 
     def execute_failures(self, distance):
         """
@@ -162,7 +164,7 @@ class FailureFactory:
         :return: row: dictionary with all the iteration information
         """
         row = {"Iteration": self.iteration, 'Sensor_folder': sensor_folder, "Start_timestamp": self.start_timestamp,
-               "End_timestamp": self.client.getMultirotorState().timestamp}
+               "End_timestamp": self.client.getMultirotorState(vehicle_name=self.vehicle_name).timestamp}
         if self.chosen_mode == 1:
             row["Failure"] = 0
             row_keys = row.keys()
