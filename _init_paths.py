@@ -9,6 +9,11 @@ def add_path(path):
 
 this_dir = osp.dirname(__file__)
 
-# Add lib to PYTHONPATH
-lib_path = osp.join(this_dir, 'FailureTypes')
-add_path(lib_path)
+# Add libs to PYTHONPATH
+# Add failure types libraries
+lib_path_failures = osp.join(this_dir, 'FailureTypes')
+add_path(lib_path_failures)
+
+# Add Navigation Algorithms libraries
+lib_path_nav = osp.join(this_dir, 'PythonRobotics')
+add_path(lib_path_nav)
