@@ -1,11 +1,9 @@
-import argparse
-import os
 import numpy as np
 import pyvista as pv
 
-from scipy.spatial.transform import rotation as R
 
-COLORS=['b','g','r','w']
+COLORS = ['b', 'g', 'r', 'w']
+
 
 class Plotter3D(pv.Plotter):
     def __init__(self, occupancy_grid, interactive=False):

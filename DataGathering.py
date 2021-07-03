@@ -1,7 +1,8 @@
 import sys
+import _init_paths
 from icecream import ic
-from Occupancy_grid.user_input import load_user_input
-from Occupancy_grid.DroneFlight import DroneFlight
+from user_input import load_user_input
+from DroneFlight import DroneFlight
 
 
 class DataGathering:
@@ -23,6 +24,7 @@ class DataGathering:
                                         self.args.cameras_info,
                                         sample_rates=self.args.sample_rates,
                                         min_flight_distance_m=self.args.min_flight_distance_m,
+                                        max_flight_distance_m=self.args.max_flight_distance_m,
                                         saved_vertices_filename=self.args.saved_vertices_filename,
                                         update_saved_vertices=self.args.update_saved_vertices, plot2D=self.args.plot2D,
                                         plot3D=self.args.plot3D, vehicle_name=self.vehicle_name,

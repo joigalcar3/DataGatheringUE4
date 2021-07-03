@@ -3,12 +3,11 @@ import airsim
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
 import pickle
+import os
 
-from Occupancy_grid.plotter3d import *
-from Occupancy_grid.Polygon_edges import obtain_outer_edge
-from Occupancy_grid.counter_clockwise_ordering import counter_clockwise_ordering
-from Occupancy_grid.compute_distance_points import compute_distance_points
-from Occupancy_grid.user_input import load_user_input
+from Plotter3D import *
+from utils import counter_clockwise_ordering, compute_distance_points, obtain_outer_edge
+from user_input import load_user_input
 
 
 class OccupancyMap:
@@ -189,7 +188,7 @@ class OccupancyMap:
         self.object_grid_coord_all = self.object_grid_coord.copy()
         for name in objects_names:
             object_points = np.array(list(self.object_grid_coord[name]))  # Coordinates of each obstacle
-            if object_points.shape[0] > 3:
+            if object_points.shape[0] > 3 and len(set(object_points[:, 0])) > 1 and len(set(object_points[:, 1])) > 1:
                 # Obtain the (grid) coordinates of the points that shape the outer edge of the polygon
                 _, output_points_unordered = list(obtain_outer_edge(object_points, alpha, only_outer=True))
 
@@ -215,6 +214,18 @@ class OccupancyMap:
 
                 # Apply mask to point grid
                 internal_points = points_grid[mask]
+            # elif object_points.shape[0] > 3 and len(set(object_points[:, 0])) == 1:
+            #     min_y = min(object_points[:, 0])
+            #     max_y = max(object_points[:, 0])
+            #     y_range = np.reshape(np.arange(min_y, max_y+1), [-1, 1])
+            #     x_range = np.ones((y_range.shape[0], 1)) * object_points[0, 0]
+            #     internal_points = np.hstack((x_range, y_range))
+            # elif object_points.shape[0] > 3 and len(set(object_points[:, 1])) == 1:
+            #     min_x = min(object_points[:, 1])
+            #     max_x = max(object_points[:, 1])
+            #     x_range = np.reshape(np.arange(min_x, max_x + 1), [-1, 1])
+            #     y_range = np.ones((x_range.shape[0], 1)) * object_points[0, 1]
+            #     internal_points = np.hstack((x_range, y_range))
             else:
                 internal_points = object_points
 

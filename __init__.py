@@ -2,10 +2,6 @@
 
 # User input
 if __name__ == '__main__':
-    from Occupancy_grid.OccupancyMap import OccupancyMap
-    from Occupancy_grid.GridNavigation import GridNavigation
-    from Occupancy_grid.DroneSensors import DroneSensors
-    from Occupancy_grid.compute_distance_points import compute_distance_points
     from Occupancy_grid.user_input import load_user_input
     from Occupancy_grid.DroneFlight import DroneFlight
     args = load_user_input()

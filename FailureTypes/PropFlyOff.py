@@ -1,6 +1,6 @@
 from icecream import ic
 
-from Occupancy_grid.FailureTypes.PropDamage import PropDamage
+from PropDamage import PropDamage
 
 
 class PropFlyOff(PropDamage):

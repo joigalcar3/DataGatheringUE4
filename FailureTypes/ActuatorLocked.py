@@ -1,7 +1,7 @@
 import random
 from icecream import ic
 
-from Occupancy_grid.FailureTypes.ActuatorFailureBase import ActuatorFailureBase
+from ActuatorFailureBase import ActuatorFailureBase
 
 
 class ActuatorLocked(ActuatorFailureBase):

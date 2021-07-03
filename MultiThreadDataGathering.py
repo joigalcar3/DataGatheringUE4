@@ -5,9 +5,9 @@ import os
 from icecream import ic
 import json
 
-from Occupancy_grid.DataGathering import DataGathering
-from Occupancy_grid.user_input import load_user_input
-from Occupancy_grid.merge_flight_infos import merge_flight_infos
+from DataGathering import DataGathering
+from user_input import load_user_input
+from utils import merge_flight_infos
 
 
 class MultiThreadDataGathering(threading.Thread):

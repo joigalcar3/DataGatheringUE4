@@ -1,12 +1,11 @@
-from Occupancy_grid.OccupancyMap import OccupancyMap
-from Occupancy_grid.PythonRobotics.PathPlanning.WavefrontCPP.wavefront_coverage_path_planner import wavefront
-from Occupancy_grid.PythonRobotics.PathPlanning.VoronoiRoadMap.voronoi_road_map import VoronoiRoadMapPlanner
-from Occupancy_grid.PythonRobotics.PathPlanning.InformedRRTStar.informed_rrt_star import InformedRRTStar
-from Occupancy_grid.PythonRobotics.PathPlanning.AStar.a_star import AStarPlanner
-from Occupancy_grid.PythonRobotics.PathPlanning.BSplinePath.bspline_path import approximate_b_spline_path, \
-    interpolate_b_spline_path
-from Occupancy_grid.PythonRobotics.PathPlanning.ProbabilisticRoadMap.probabilistic_road_map import prm_planning
-from Occupancy_grid.user_input import load_user_input
+from OccupancyMap import OccupancyMap
+from PythonRobotics.PathPlanning.WavefrontCPP.wavefront_coverage_path_planner import wavefront
+from PythonRobotics.PathPlanning.VoronoiRoadMap.voronoi_road_map import VoronoiRoadMapPlanner
+from PythonRobotics.PathPlanning.InformedRRTStar.informed_rrt_star import InformedRRTStar
+from PythonRobotics.PathPlanning.AStar.a_star import AStarPlanner
+from PythonRobotics.PathPlanning.BSplinePath.bspline_path import approximate_b_spline_path, interpolate_b_spline_path
+from PythonRobotics.PathPlanning.ProbabilisticRoadMap.probabilistic_road_map import prm_planning
+from user_input import load_user_input
 from math import isclose
 
 import numpy as np

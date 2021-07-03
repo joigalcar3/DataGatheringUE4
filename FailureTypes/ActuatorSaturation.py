@@ -1,6 +1,6 @@
 from icecream import ic
 
-from Occupancy_grid.FailureTypes.ActuatorLocked import ActuatorLocked
+from ActuatorLocked import ActuatorLocked
 
 
 class ActuatorSaturation(ActuatorLocked):

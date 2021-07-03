@@ -1,12 +1,10 @@
 import airsim
 import os
 import time
-import csv
 import numpy as np
-from Occupancy_grid.DroneCamera import DroneCamera
-from Occupancy_grid.transform_list_to_string import transform_list_to_string
-from Occupancy_grid.unwrapping_json import unwrapping_json
-from Occupancy_grid.user_input import load_user_input
+from DroneCamera import DroneCamera
+from utils import transform_list_to_string, unwrapping_json
+from user_input import load_user_input
 
 
 class DroneSensors:
@@ -84,7 +82,8 @@ class DroneSensors:
         """
         # Create the folder where the data of the flight will be saved
         try:
-            self.flight_folder_location = os.path.join(self.folder, time.strftime("%Y%m%d-%H%M%S") + "_" + self.vehicle_name[-1])
+            self.flight_folder_location = os.path.join(self.folder,
+                                                       time.strftime("%Y%m%d-%H%M%S") + "_" + self.vehicle_name[-1])
             self.folder_name = time.strftime("%Y%m%d-%H%M%S") + "_" + self.vehicle_name[-1]
         except:
             self.flight_folder_location = os.path.join(self.folder, time.strftime("%Y%m%d-%H%M%S"))
@@ -111,13 +110,14 @@ class DroneSensors:
         :return:
         """
         # Check whether data has tobe collected according to the sample rate of the sensor
-        sample_rate = self.sample_rates[sensor_type]
-        time_old = self.last_sample_time[sensor_type]
-        time_now = self.client.getMultirotorState().timestamp
+        sample_rate, time_old, time_now = self.sample_rates[sensor_type], self.last_sample_time[sensor_type], \
+                                          self.client.getMultirotorState().timestamp
+        print(time_now)
         if (self.UE4_second / sample_rate + time_old) < time_now:
+            print(time_now, sensor_type)
             self.last_sample_time[sensor_type] = time_now
             # Obtain the name of the AirSim method that has to be called
-            name_func = 'get' + sensor_type.capitalize() + 'Data'
+            name_func = "".join(['get' + sensor_type.capitalize() + 'Data'])
             output = getattr(self.client, name_func)(vehicle_name=self.vehicle_name)
             content = output.__dict__
 
@@ -131,9 +131,8 @@ class DroneSensors:
         Store the camera information
         :return:
         """
-        sample_rate = self.sample_rates['camera']
-        time_old = self.last_sample_time['camera']
-        time_now = self.client.getMultirotorState().timestamp
+        sample_rate, time_old, time_now = self.sample_rates['camera'], self.last_sample_time['camera'], \
+                                          self.last_sample_time['camera']
         if (self.UE4_second / sample_rate + time_old) < time_now:
             camera_requests = [camera.obtain_camera_image() for camera in self.cameras]
             responses = self.client.simGetImages(camera_requests, vehicle_name=self.vehicle_name)

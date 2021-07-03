@@ -3,8 +3,7 @@ import os
 import numpy as np
 import time
 import cv2
-from Occupancy_grid.transform_list_to_string import transform_list_to_string
-from Occupancy_grid.unwrapping_json import unwrapping_json
+from utils import transform_list_to_string, unwrapping_json
 
 
 class DroneCamera:

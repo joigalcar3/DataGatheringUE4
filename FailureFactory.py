@@ -2,10 +2,10 @@ import random
 import os
 import csv
 import time
-from Occupancy_grid.FailureTypes.PropFlyOff import PropFlyOff
-from Occupancy_grid.FailureTypes.PropDamage import PropDamage
-from Occupancy_grid.FailureTypes.ActuatorSaturation import ActuatorSaturation
-from Occupancy_grid.FailureTypes.ActuatorLocked import ActuatorLocked
+from PropFlyOff import PropFlyOff
+from PropDamage import PropDamage
+from ActuatorSaturation import ActuatorSaturation
+from ActuatorLocked import ActuatorLocked
 
 
 class FailureFactory:
@@ -141,6 +141,8 @@ class FailureFactory:
         """
         if self.chosen_mode != 1 and distance <= self.injection_distance:
             self.chosen_failure.activate_failure()
+            return 1
+        return 0
 
     def print_failure(self):
         """
