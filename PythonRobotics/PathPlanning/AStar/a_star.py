@@ -12,13 +12,14 @@ See Wikipedia article (https://en.wikipedia.org/wiki/A*_search_algorithm)
 import math
 from icecream import ic
 import matplotlib.pyplot as plt
+from math import sqrt, ceil
 
 show_animation = True
 
 
 class AStarPlanner:
 
-    def __init__(self, ox, oy, resolution, rr):
+    def __init__(self, grid, resolution, rr):
         """
         Initialize grid map for a star planning
 
@@ -35,7 +36,7 @@ class AStarPlanner:
         self.obstacle_map = None
         self.x_width, self.y_width = 0, 0
         self.motion = self.get_motion_model()
-        self.calc_obstacle_map(ox, oy)
+        self.calc_obstacle_map(grid)
 
     class Node:
         def __init__(self, x, y, cost, parent_index):
@@ -187,12 +188,12 @@ class AStarPlanner:
 
         return True
 
-    def calc_obstacle_map(self, ox, oy):
+    def calc_obstacle_map(self, grid):
 
-        self.min_x = round(min(ox))
-        self.min_y = round(min(oy))
-        self.max_x = round(max(ox))
-        self.max_y = round(max(oy))
+        self.min_x = 0
+        self.min_y = 0
+        self.max_x = grid.shape[0] - 1
+        self.max_y = grid.shape[1] - 1
         ic(self.min_x)
         ic(self.min_y)
         ic(self.max_x)
@@ -203,18 +204,43 @@ class AStarPlanner:
         ic(self.x_width)
         ic(self.y_width)
 
+        self.obstacle_map = grid.copy()
+        obstacle_map_new = grid.copy()
+        repeated_diagonals = ceil(self.rr/sqrt(2))
+        it_diag = 0
         # obstacle map generation
-        self.obstacle_map = [[False for _ in range(self.y_width+1)]
-                             for _ in range(self.x_width+1)]
-        for ix in range(self.x_width+1):
-            x = self.calc_grid_position(ix, self.min_x)
-            for iy in range(self.y_width+1):
-                y = self.calc_grid_position(iy, self.min_y)
-                for iox, ioy in zip(ox, oy):
-                    d = math.hypot(iox - x, ioy - y)
-                    if d <= self.rr:
-                        self.obstacle_map[ix][iy] = True
-                        break
+        for i in range(int(self.rr)):
+            for x in range(self.x_width):
+                for y in range(self.y_width):
+                    if self.obstacle_map[x, y]:
+                        # In the x-y direction
+                        obstacle_map_new[max(x - 1, 0), y] = True
+                        obstacle_map_new[min(x + 1, self.x_width-1), y] = True
+                        obstacle_map_new[x, max(y - 1, 0)] = True
+                        obstacle_map_new[x, min(y + 1, self.y_width-1)] = True
+                        # Diagonals
+                        if it_diag < repeated_diagonals:
+                            obstacle_map_new[max(x - 1, 0), max(y - 1, 0)] = True
+                            obstacle_map_new[min(x + 1, self.x_width-1), max(y - 1, 0)] = True
+                            obstacle_map_new[max(x - 1, 0), min(y + 1, self.y_width-1)] = True
+                            obstacle_map_new[min(x + 1, self.x_width-1), min(y + 1, self.y_width-1)] = True
+            it_diag += 1
+            self.obstacle_map = obstacle_map_new.copy()
+        self.obstacle_map = self.obstacle_map.tolist()
+
+
+
+        # self.obstacle_map = [[False for _ in range(self.y_width+1)]
+        #                      for _ in range(self.x_width+1)]
+        # for ix in range(self.x_width+1):
+        #     x = self.calc_grid_position(ix, self.min_x)
+        #     for iy in range(self.y_width+1):
+        #         y = self.calc_grid_position(iy, self.min_y)
+        #         for iox, ioy in zip(ox, oy):
+        #             d = math.hypot(iox - x, ioy - y)
+        #             if d <= self.rr:
+        #                 self.obstacle_map[ix][iy] = True
+        #                 break
 
     @staticmethod
     def get_motion_model():

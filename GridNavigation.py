@@ -143,10 +143,10 @@ class GridNavigation:
         grid_size = 1
 
         # Coordinates of the obstacles
-        ox = np.where(self.grid == True)[0].tolist()
-        oy = np.where(self.grid == True)[1].tolist()
+        # ox = np.where(self.grid == True)[0].tolist()
+        # oy = np.where(self.grid == True)[1].tolist()
 
-        a_star = AStarPlanner(ox, oy, grid_size, robot_radius)
+        a_star = AStarPlanner(self.grid, grid_size, robot_radius)
         rx, ry = a_star.planning(sx, sy, gx, gy, self.plotter_2D)
         path = [(i, j) for i, j in zip(rx, ry)]
 
@@ -154,6 +154,8 @@ class GridNavigation:
         path.reverse()
 
         if self.plotter_2D:
+            ox = np.where(self.grid == True)[0].tolist()
+            oy = np.where(self.grid == True)[1].tolist()
             plt.plot(ox, oy, ".k")
             plt.plot(sx, sy, "og")
             plt.plot(gx, gy, "xb")

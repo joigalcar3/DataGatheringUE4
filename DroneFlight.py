@@ -382,18 +382,28 @@ class DroneFlight:
                 collision_object = collision_info.object_name
                 # Check if it has collided against the ground or an obstacle
                 if collision_object[0:6] == 'Ground':
+                    message = "Collision ground"
+                    ic(message)
                     return 0, distance, 2
                 else:
+                    message = "Collision obstacle"
+                    ic(message)
                     return 0, distance, 1
             # Check whether the drone flies off into the sky
             elif z_val > -3 * self.altitude_m:
+                message = "Fly away"
+                ic(message)
                 return 0, distance, 3
             # Check whether the drone is on the ground and the collision has not been registered = very smooth landing
             elif z_val < 0.75:
+                message = "Collision ground"
+                ic(message)
                 return 0, distance, 2
 
         # Check whether the distance is less than 2 metres
         if distance < 2:
+            message = "Reached destination"
+            ic(message)
             return 0, distance, 0
 
         return 1, distance, 0
@@ -408,6 +418,7 @@ class DroneFlight:
         failed = 0
         # While the drone has not reached destination or collided
         while not_arrived:
+            self.client.simPause(True)
             self.sensors.store_sensors_data()
             # time.sleep(1 / self.sample_rate)
             now = datetime.now()
@@ -422,6 +433,7 @@ class DroneFlight:
             if keyboard.is_pressed('K'):
                 print('The letter K has been pressed.')
                 break
+            self.client.simPause(False)
 
         # Once the drone has arrived to its destination, the sensor and failure data is stored in their respective files
         self.failure_factory.write_to_file(collision_type, self.sensors.folder_name)

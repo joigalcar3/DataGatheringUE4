@@ -2,6 +2,7 @@ import airsim
 import os
 import time
 import numpy as np
+from icecream import ic
 from DroneCamera import DroneCamera
 from utils import transform_list_to_string, unwrapping_json
 from user_input import load_user_input
@@ -112,19 +113,12 @@ class DroneSensors:
         # Check whether data has tobe collected according to the sample rate of the sensor
         sample_rate, time_old, time_now = self.sample_rates[sensor_type], self.last_sample_time[sensor_type], \
                                           self.client.getMultirotorState().timestamp
-        print(time_now)
         if (self.UE4_second / sample_rate + time_old) < time_now:
-            print(time_now, sensor_type)
             self.last_sample_time[sensor_type] = time_now
             # Obtain the name of the AirSim method that has to be called
             name_func = "".join(['get' + sensor_type.capitalize() + 'Data'])
             output = getattr(self.client, name_func)(vehicle_name=self.vehicle_name)
-            content = output.__dict__
-
-            # Obtain the data stored by the tree structured returned by AirSim
-            headers = list(content.keys())
-            unwrapped_data = unwrapping_json(headers, output, keys_values='values', predecessor='', unwrapped_info=None)
-            self.data[sensor_type].append(unwrapped_data)
+            self.data[sensor_type].append(output)
 
     def store_camera_data(self):
         """
@@ -132,7 +126,7 @@ class DroneSensors:
         :return:
         """
         sample_rate, time_old, time_now = self.sample_rates['camera'], self.last_sample_time['camera'], \
-                                          self.last_sample_time['camera']
+                                          self.client.getMultirotorState().timestamp
         if (self.UE4_second / sample_rate + time_old) < time_now:
             camera_requests = [camera.obtain_camera_image() for camera in self.cameras]
             responses = self.client.simGetImages(camera_requests, vehicle_name=self.vehicle_name)
@@ -155,7 +149,16 @@ class DroneSensors:
         for sensor in self.data.keys():
             filename = sensor + ".csv"
             full_path = os.path.join(self.flight_folder_location, filename)
-            data_points = np.array(self.data[sensor])
+            output = self.data[sensor]
+            unwrapped_data_lst = []
+            for data_point in output:
+                content = data_point.__dict__
+
+                # Obtain the data stored by the tree structured returned by AirSim
+                headers = list(content.keys())
+                unwrapped_data = unwrapping_json(headers, data_point, keys_values='values', predecessor='', unwrapped_info=None)
+                unwrapped_data_lst.append(unwrapped_data)
+            data_points = np.array(unwrapped_data_lst)
             header = self.headers[sensor]
             np.savetxt(full_path, data_points, delimiter=',', header=header)
 
