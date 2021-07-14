@@ -7,13 +7,13 @@ class ActuatorFailureBase(abc.ABC):
     """
     Base class that contains the general methods for actuator failures.
     """
-    UE4_second = 993705198.592  # Duration of one second in UE4
+    UE4_second = 1e9  # Duration of one second in UE4
     propeller_names = ["front_right", "back_left", "front_left", "back_right"]  # name of each propeller
     failure_time_mode_names = ["Abrupt", "Linear"]  # Name of the failure mode depending of its behaviour along time
     continuity_names = ["Discrete", "Continuous"]   # Name of the failure mode depending on the failure available coeffs
     step = 1
-    min_time_modality = 5     # In the case of linearly changing coefficient, minimum slope
-    max_time_modality = 15    # In the case of linearly changing coefficient, maximum slope
+    min_time_modality = 15     # In the case of linearly changing coefficient, minimum slope
+    max_time_modality = 20    # In the case of linearly changing coefficient, maximum slope
 
     @property
     @abc.abstractmethod

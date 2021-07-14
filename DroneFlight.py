@@ -413,14 +413,16 @@ class DroneFlight:
         Method that retrieves the data from the sensors given the sample rate and executes the failure.
         :return:
         """
+        self.sensors.start_signal_sensors_data_storage()
+
         not_arrived = 1
         collision_type = 0
         failed = 0
         # While the drone has not reached destination or collided
         while not_arrived:
-            self.client.simPause(True)
             self.sensors.store_sensors_data()
-            # time.sleep(1 / self.sample_rate)
+
+            # Print the timestamp
             now = datetime.now()
             current_time = now.strftime("%H:%M:%S")
             print("Current Time =", current_time)
@@ -433,7 +435,6 @@ class DroneFlight:
             if keyboard.is_pressed('K'):
                 print('The letter K has been pressed.')
                 break
-            self.client.simPause(False)
 
         # Once the drone has arrived to its destination, the sensor and failure data is stored in their respective files
         self.failure_factory.write_to_file(collision_type, self.sensors.folder_name)
@@ -495,3 +496,55 @@ if __name__ == "__main__":
                                update_saved_vertices=args.update_saved_vertices, plot2D=args.plot2D, plot3D=args.plot3D,
                                failure_types=args.failure_types, activate_take_off=args.activate_take_off)
     drone_flight.run(navigation_type=args.navigation_type, start_point=args.start, goal_point=args.goal)
+
+#
+# import airsim
+# import time
+# client = airsim.MultirotorClient()
+# client.setImuActivation(True, 2000, False)
+# time.sleep(10)
+# potato = client.getImuStoredDataVec()
+# client.cleanImuStoredData()
+#
+# print(len(potato['timestamps']))
+# print((potato['timestamps'][-1] - potato['timestamps'][0])/1e9)
+# [(potato['timestamps'][i+1]-potato['timestamps'][i])/1e9 for i in range(len(potato['timestamps'])-1)]
+# sum([(potato['timestamps'][i+1]-potato['timestamps'][i])/1e9 for i in range(len(potato['timestamps'])-1)])
+#
+#
+#
+#
+#
+# import airsim
+# import time
+# client = airsim.MultirotorClient()
+# client.setBarometerActivation(True, 56, False)
+# time.sleep(10)
+# potato = client.getBarometerStoredDataVec()
+# client.cleanBarometerStoredData()
+#
+# print(len(potato['timestamps']))
+# print((potato['timestamps'][-1] - potato['timestamps'][0])/1e9)
+#
+#
+# import airsim
+# import time
+# client = airsim.MultirotorClient()
+# client.setMagnetometerActivation(True, 56, False)
+# time.sleep(10)
+# potato = client.getMagnetometerStoredDataVec()
+# client.cleanMagnetometerStoredData()
+#
+# print(len(potato['timestamps']))
+# print((potato['timestamps'][-1] - potato['timestamps'][0])/1e9)
+#
+# import airsim
+# import time
+# client = airsim.MultirotorClient()
+# client.setGpsActivation(True, 1000, False)
+# time.sleep(10)
+# potato = client.getGpsStoredDataVec()
+# client.cleanGpsStoredData()
+#
+# print(len(potato['timestamps']))
+# print((potato['timestamps'][-1] - potato['timestamps'][0])/1e9)

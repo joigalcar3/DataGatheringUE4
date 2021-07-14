@@ -71,20 +71,20 @@ def load_user_input():
     parser.add_argument('--update_saved_vertices', type=bool, default=False,
                         help='Whether the saved cloud points should be saved')
     parser.add_argument('--plot2D', type=bool, default=False, help='Whether the 2D plots should be shown.')
-    parser.add_argument('--plot3D', type=bool, default=False, help='Whether the 3D plots should be shown.')
+    parser.add_argument('--plot3D', type=bool, default=True, help='Whether the 3D plots should be shown.')
     parser.add_argument('--start', default=None, help='Starting flight location (tuple). If None, random point.')
     parser.add_argument('--goal', default=None, help='Target flight location (tuple). If None, random point.')
     parser.add_argument('--robot_radius', type=int, default=9,
                         help='Size of the robot in order to maintain a minimum distance'
                              'to the obstacles for the A_star, Voronoid and PRM algorithms: m')
     parser.add_argument('--smooth', type=bool, default=True, help='Whether the path is smoothed with B-splines.')
-    parser.add_argument('--sensors_lst', type=list, default=['imu'],
+    parser.add_argument('--sensors_lst', type=list, default=['imu', 'barometer', 'gps', 'magnetometer'],
                         help='List of sensors to use')
     parser.add_argument('--cameras_info', type=dict, default={'front': {"camera_name": "0", "image_type": 0}},
                         help='Dictionary cotaining the camera information: '
                              'alias, camera_name, image_type, pixels_as_float and compress')
-    parser.add_argument('--sample_rates', default={'camera': 60, 'imu': 1000, 'magnetometer': 50,
-                                                   'gps': 50, 'barometer': 50},
+    parser.add_argument('--sample_rates', default={'camera': 60, 'imu': 1000, 'magnetometer': 56,
+                                                   'gps': 56, 'barometer': 56},
                         help='Sampling rate for the sensors. Except the camera, the default sampling rates are'
                              ' from the original c++ code, in the simpleParams files for each sensor.')
     parser.add_argument('--number_runs', type=int, default=50,
@@ -93,11 +93,11 @@ def load_user_input():
                         help='Method employed for navigation: A_star, wavefront, Voronoid, RRT_star and PRM')
     parser.add_argument('--flight_altitudes', default=[3, 11],
                         help="Range of altitudes at which the drone could be spawned")
-    parser.add_argument('--failure_types', default=[],
+    parser.add_argument('--failure_types', default=['actuator_saturation_dis_abr'],
                         help="Failures types considered during the flight. Options listed in the Failure Factory. It"
-                             "needs to be followed by dis or con, which tells the factory the number of options"
-                             "considered for failure and abr or lin, which tells the factory the time component of the "
-                             "failure.")
+                             "needs to be followed by dis or con (or mix), which tells the factory the number of "
+                             "options considered for failure and abr or lin, which tells the factory the time component"
+                             "of the failure.")
     parser.add_argument('--activate_take_off', type=bool, default=False,
                         help="Whether the take-off should be activated.")
 

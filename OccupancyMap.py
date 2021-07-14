@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.path import Path
 import pickle
 import os
+from math import sqrt
 
 from Plotter3D import *
 from utils import counter_clockwise_ordering, compute_distance_points, obtain_outer_edge
@@ -363,10 +364,11 @@ class OccupancyMap:
             for j in range(candidates_y.shape[0]):
                 if self.grid[int(candidates_x[i]), int(candidates_y[j])]:
                     # Check whether the evaluated point is still within the distance from the location
-                    if compute_distance_points((candidates_x[i], candidates_y[j]), location) <= distance:
+                    # The square root of 2 is added to the distance since that is the distance of the diagonal of a
+                    # square. The worst case scenario.
+                    if compute_distance_points((candidates_x[i], candidates_y[j]), location) <= (distance+sqrt(2)):
                         return True
         return False
-
 
     def run(self, h=1100, delta_h=500, filename_vertices='object_points',
             update_vertices_flag=False, plot_2D=False, plot3D=False):

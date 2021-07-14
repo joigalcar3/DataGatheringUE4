@@ -14,7 +14,7 @@ class DroneSensors:
     """
     # Approximate duration of a second in Unreal Engine 4. Computed by taking the average of 1000 real seconds with
     # the drone in stand-by.
-    UE4_second = 993705198.592
+    UE4_second = 1e9
 
     def __init__(self, client, sensors, cameras_info, sample_rates, folder='Sensor_data', vehicle_name=''):
         self.client = client
@@ -51,17 +51,9 @@ class DroneSensors:
         :param sensor_type: type of the sensor
         :return:
         """
-        # Obtain the name of the function to be run
-        name_func = 'get' + sensor_type.capitalize() + 'Data'
-
-        # Call the function
+        name_func = 'get' + sensor_type.capitalize() + 'StoredDataVec'
         output = getattr(self.client, name_func)(vehicle_name=self.vehicle_name)
-        content = output.__dict__
-
-        # Obtain the name of all the variables stored in the dictionary.
-        headers = list(content.keys())
-        header_names = unwrapping_json(headers, output, keys_values='keys')  # Extract the information from AirSim tree
-
+        header_names = list(output.keys())
         # Puts the names of all the variables together in a single string to start the Excel used for data storage
         headers_str = transform_list_to_string(header_names)
         self.headers[sensor_type] = headers_str
@@ -95,30 +87,24 @@ class DroneSensors:
         self.initialize_signal_sensors()
         self.initialize_cameras()
 
-    def store_signals_sensors_data(self):
+    def start_signal_sensors_data_storage(self):
         """
         Store the data from the sensors, except the cameras. The data is still not dumped in the storage files.
         This prevents the constant calling of write commands to files in the directory.
         :return:
         """
         for sensor in self.sensors:
-            self.store_signal_sensor_data(sensor)
+            self.start_signal_sensor_data_storage(sensor)
 
-    def store_signal_sensor_data(self, sensor_type):
+    def start_signal_sensor_data_storage(self, sensor_type):
         """
-        Store the data from each of the sensors, except the cameras.
-        :param sensor_type: the type of sensor, whether it is a gps, barometer, magnetometer or imu
+        Method that tells C++ to start storing IMU data, that will be retrieved when the data is to be written to a file
+        :param sensor_type: the sensor whose storage will be started.
         :return:
         """
-        # Check whether data has tobe collected according to the sample rate of the sensor
-        sample_rate, time_old, time_now = self.sample_rates[sensor_type], self.last_sample_time[sensor_type], \
-                                          self.client.getMultirotorState().timestamp
-        if (self.UE4_second / sample_rate + time_old) < time_now:
-            self.last_sample_time[sensor_type] = time_now
-            # Obtain the name of the AirSim method that has to be called
-            name_func = "".join(['get' + sensor_type.capitalize() + 'Data'])
-            output = getattr(self.client, name_func)(vehicle_name=self.vehicle_name)
-            self.data[sensor_type].append(output)
+        sample_rate = self.sample_rates[sensor_type]
+        name_func = "".join(['set' + sensor_type.capitalize() + 'Activation'])
+        getattr(self.client, name_func)(activation=True, sample_rate=sample_rate, vehicle_name=self.vehicle_name)
 
     def store_camera_data(self):
         """
@@ -138,7 +124,7 @@ class DroneSensors:
         Store the information from all the sensors
         :return:
         """
-        self.store_signals_sensors_data()
+        # self.store_signals_sensors_data()
         self.store_camera_data()
 
     def write_signal_sensor_to_file(self):
@@ -149,15 +135,14 @@ class DroneSensors:
         for sensor in self.data.keys():
             filename = sensor + ".csv"
             full_path = os.path.join(self.flight_folder_location, filename)
-            output = self.data[sensor]
+            name_func = 'get' + sensor.capitalize() + 'StoredDataVec'
+            output = getattr(self.client, name_func)(vehicle_name=self.vehicle_name)
+            elements = list(output.keys())
+            number_data_points = len(output[elements[0]])
             unwrapped_data_lst = []
-            for data_point in output:
-                content = data_point.__dict__
-
-                # Obtain the data stored by the tree structured returned by AirSim
-                headers = list(content.keys())
-                unwrapped_data = unwrapping_json(headers, data_point, keys_values='values', predecessor='', unwrapped_info=None)
-                unwrapped_data_lst.append(unwrapped_data)
+            for data_point in range(number_data_points):
+                data_point_lst = [output[element][data_point] for element in elements]
+                unwrapped_data_lst.append(data_point_lst)
             data_points = np.array(unwrapped_data_lst)
             header = self.headers[sensor]
             np.savetxt(full_path, data_points, delimiter=',', header=header)
@@ -179,11 +164,17 @@ class DroneSensors:
         self.write_camera_to_file()
         self.restart_sensors()
 
+    def clean_c_stored_data(self):
+        for sensor in self.sensors:
+            name_func = 'clean' + sensor.capitalize() + 'StoredData'
+            getattr(self.client, name_func)(vehicle_name=self.vehicle_name)
+
     def restart_sensors(self):
         """
         All the information about the sensors is restarted once the data has been written to disk.
         :return:
         """
+        self.clean_c_stored_data()
         self.cameras = []
         self.flight_folder_location = None
         self.folder_name = None
