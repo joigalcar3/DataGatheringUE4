@@ -114,17 +114,19 @@ class DroneSensors:
         sample_rate, time_old, time_now = self.sample_rates['camera'], self.last_sample_time['camera'], \
                                           self.client.getMultirotorState().timestamp
         if (self.UE4_second / sample_rate + time_old) < time_now:
+            # self.client.simPause(True)
+            self.last_sample_time['camera'] = time_now
             camera_requests = [camera.obtain_camera_image() for camera in self.cameras]
             responses = self.client.simGetImages(camera_requests, vehicle_name=self.vehicle_name)
             for i in range(self.number_cameras):
                 self.cameras[i].store_camera_image(responses[i])
+            # self.client.simPause(False)
 
     def store_sensors_data(self):
         """
         Store the information from all the sensors
         :return:
         """
-        # self.store_signals_sensors_data()
         self.store_camera_data()
 
     def write_signal_sensor_to_file(self):

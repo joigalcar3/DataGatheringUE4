@@ -135,3 +135,5 @@ dmypy.json
 Dummy.py
 
 *.p
+
+Sensor_data/Test/

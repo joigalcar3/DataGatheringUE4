@@ -515,13 +515,15 @@ if __name__ == "__main__":
 #
 #
 #
-# import airsim
-# import time
-# client = airsim.MultirotorClient()
-# client.setBarometerActivation(True, 56, False)
-# time.sleep(10)
-# potato = client.getBarometerStoredDataVec()
-# client.cleanBarometerStoredData()
+import airsim
+import time
+client = airsim.MultirotorClient()
+client.armDisarm(True)
+client.simGetImages([airsim.ImageRequest("0", 0)])
+client.setBarometerActivation(True, 56, False)
+time.sleep(10)
+potato = client.getBarometerStoredDataVec()
+client.cleanBarometerStoredData()
 #
 # print(len(potato['timestamps']))
 # print((potato['timestamps'][-1] - potato['timestamps'][0])/1e9)
@@ -548,3 +550,10 @@ if __name__ == "__main__":
 #
 # print(len(potato['timestamps']))
 # print((potato['timestamps'][-1] - potato['timestamps'][0])/1e9)
+
+
+# 22.4
+# 15.61
+# 19.43
+# [times[i+1] - times[i] for i in range(len(times)-1)]
+# times = [int(i[:-4]) for i in os.listdir("E:\Master_project\Simulator\AirSim_simulator\AirSim\PythonClient\multirotor\Occupancy_grid\Sensor_data\20210715-163858_1\front")[:-1]]

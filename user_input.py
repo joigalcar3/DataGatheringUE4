@@ -56,28 +56,35 @@ def load_user_input():
     # parser.add_argument('--activate_take_off', type=bool, default=False,
     #                     help="Whether the take-off should be activated.")
 
+    # Arguments related to the altitude selection
     parser.add_argument('--altitude_m', type=int, default=0, help='Drone flight altitude: m')
     parser.add_argument('--altitude_range_m', type=int, default=3,
                         help='Altitude range to slice the cloud of points: m')
+    parser.add_argument('--flight_altitudes', default=[3, 11],
+                        help="Range of altitudes at which the drone could be spawned")
+
+    # Arguments related to the occupancy map generation
     parser.add_argument('--cell_size_m', type=float, default=3, help='Grid cell size: m')
     parser.add_argument('--ue4_airsim_conversion_units', type=int, default=100,
                         help='Conversion factor from Unreal Engine 4 to Airsim units (m)')
-    parser.add_argument('--min_flight_distance_m', type=int, default=30,
-                        help='Minimum distance that a drone must fly in order to be considered a flight')
-    parser.add_argument('--max_flight_distance_m', type=int, default=200,
-                        help='Maximum distance that a drone must fly in order to be considered a flight')
     parser.add_argument('--saved_vertices_filename', type=str, default='object_points',
                         help='Directory where to save cloud points')
     parser.add_argument('--update_saved_vertices', type=bool, default=False,
                         help='Whether the saved cloud points should be saved')
-    parser.add_argument('--plot2D', type=bool, default=False, help='Whether the 2D plots should be shown.')
-    parser.add_argument('--plot3D', type=bool, default=True, help='Whether the 3D plots should be shown.')
+
+    # Arguments related to the drone navigation
+    parser.add_argument('--min_flight_distance_m', type=int, default=30,
+                        help='Minimum distance that a drone must fly in order to be considered a flight')
+    parser.add_argument('--max_flight_distance_m', type=int, default=200,
+                        help='Maximum distance that a drone must fly in order to be considered a flight')
     parser.add_argument('--start', default=None, help='Starting flight location (tuple). If None, random point.')
     parser.add_argument('--goal', default=None, help='Target flight location (tuple). If None, random point.')
     parser.add_argument('--robot_radius', type=int, default=9,
                         help='Size of the robot in order to maintain a minimum distance'
                              'to the obstacles for the A_star, Voronoid and PRM algorithms: m')
     parser.add_argument('--smooth', type=bool, default=True, help='Whether the path is smoothed with B-splines.')
+
+    # Arguments related to the sensor data collection
     parser.add_argument('--sensors_lst', type=list, default=['imu', 'barometer', 'gps', 'magnetometer'],
                         help='List of sensors to use')
     parser.add_argument('--cameras_info', type=dict, default={'front': {"camera_name": "0", "image_type": 0}},
@@ -87,19 +94,27 @@ def load_user_input():
                                                    'gps': 56, 'barometer': 56},
                         help='Sampling rate for the sensors. Except the camera, the default sampling rates are'
                              ' from the original c++ code, in the simpleParams files for each sensor.')
-    parser.add_argument('--number_runs', type=int, default=50,
-                        help='Number of runs to be performed')
     parser.add_argument('--navigation_type', type=str, default="A_star",
                         help='Method employed for navigation: A_star, wavefront, Voronoid, RRT_star and PRM')
-    parser.add_argument('--flight_altitudes', default=[3, 11],
-                        help="Range of altitudes at which the drone could be spawned")
-    parser.add_argument('--failure_types', default=['actuator_saturation_dis_abr'],
+
+    # Arguments related to the failure factory
+    parser.add_argument('--failure_types', default=['actuator_saturation_dis_lin'],
                         help="Failures types considered during the flight. Options listed in the Failure Factory. It"
                              "needs to be followed by dis or con (or mix), which tells the factory the number of "
                              "options considered for failure and abr or lin, which tells the factory the time component"
                              "of the failure.")
+
+    # Arguments related to the drone flight
     parser.add_argument('--activate_take_off', type=bool, default=False,
                         help="Whether the take-off should be activated.")
+
+    # Arguments related to the data gathering
+    parser.add_argument('--number_runs', type=int, default=50,
+                        help='Number of runs to be performed')
+
+    # Arguments for debugging purposes
+    parser.add_argument('--plot2D', type=bool, default=False, help='Whether the 2D plots should be shown.')
+    parser.add_argument('--plot3D', type=bool, default=False, help='Whether the 3D plots should be shown.')
 
     return parser.parse_args()
 
