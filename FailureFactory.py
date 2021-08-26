@@ -6,6 +6,7 @@ from PropFlyOff import PropFlyOff
 from PropDamage import PropDamage
 from ActuatorSaturation import ActuatorSaturation
 from ActuatorLocked import ActuatorLocked
+from icecream import ic
 
 
 class FailureFactory:
@@ -35,13 +36,14 @@ class FailureFactory:
     folder_name = "Flight_info/"
 
     # Information that the flight info file stores
-    header = ['Iteration', "Sensor_folder", "Start_timestamp", "End_timestamp", "Failure", "Failure_type",
+    header = ['Iteration', "Sensor_folder", "Start_timestamp", "End_timestamp", "ClockSpeed", "Failure", "Failure_type",
               "Failure_mode", "Failure_mode_local", "Failure_magnitude", "Magnitude_start", "Time_linear_slope",
               "Continuity", "Time_modality", "Failure_timestamp", "Distance", "Percent_trip", "Collision_type"]
 
-    def __init__(self, client, failure_types, vehicle_name=''):
+    def __init__(self, client, failure_types, clock_speed=1, vehicle_name=''):
         self.client = client
         self.vehicle_name = vehicle_name
+        self.clock_speed = clock_speed
         if failure_types is not None:
             self.failure_types = failure_types
         else:
@@ -129,7 +131,7 @@ class FailureFactory:
             self.total_distance = distance
             self.print_failure()
         else:
-            print("No failure will be injected.")
+            ic("No failure will be injected.")
         self.start_timestamp = self.client.getMultirotorState(vehicle_name=self.vehicle_name).timestamp
 
     def execute_failures(self, distance):
@@ -154,9 +156,9 @@ class FailureFactory:
         chosen_distance = "Chosen distance: " + str(self.injection_distance) + "/" + str(round(self.total_distance, 2))\
                           + ". At " + str(round(100 * (1 - self.injection_distance / self.total_distance), 2)) \
                           + "% of the complete trip."
-        print(chosen_failure)
-        print(chosen_mode)
-        print(chosen_distance)
+        ic(chosen_failure)
+        ic(chosen_mode)
+        ic(chosen_distance)
 
     def failure_data_collection(self, collision_type, sensor_folder):
         """
@@ -165,8 +167,9 @@ class FailureFactory:
         :param sensor_folder: the name of the folder where all the sensor information of the iteration has been stored
         :return: row: dictionary with all the iteration information
         """
-        row = {"Iteration": self.iteration, 'Sensor_folder': sensor_folder, "Start_timestamp": self.start_timestamp,
-               "End_timestamp": self.client.getMultirotorState(vehicle_name=self.vehicle_name).timestamp}
+        row = {self.header[0]: self.iteration, self.header[1]: sensor_folder, self.header[2]: self.start_timestamp,
+               self.header[3]: self.client.getMultirotorState(vehicle_name=self.vehicle_name).timestamp,
+               self.header[4]: self.clock_speed}
         if self.chosen_mode == 1:
             row["Failure"] = 0
             row_keys = row.keys()
@@ -205,7 +208,7 @@ class FailureFactory:
         :return: None
         """
         row = self.failure_data_collection(collision_type, sensor_folder)
-        print(os.path.isfile(self.file_location))
+        ic(os.path.isfile(self.file_location))
         with open(self.file_location, 'a', encoding='UTF8', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=self.header)
             writer.writerows([row])

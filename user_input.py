@@ -57,7 +57,7 @@ def load_user_input():
     #                     help="Whether the take-off should be activated.")
 
     # Arguments related to the altitude selection
-    parser.add_argument('--altitude_m', type=int, default=0, help='Drone flight altitude: m')
+    parser.add_argument('--altitude_m', type=int, default=7, help='Drone flight altitude: m')
     parser.add_argument('--altitude_range_m', type=int, default=3,
                         help='Altitude range to slice the cloud of points: m')
     parser.add_argument('--flight_altitudes', default=[3, 11],
@@ -77,8 +77,8 @@ def load_user_input():
                         help='Minimum distance that a drone must fly in order to be considered a flight')
     parser.add_argument('--max_flight_distance_m', type=int, default=200,
                         help='Maximum distance that a drone must fly in order to be considered a flight')
-    parser.add_argument('--start', default=None, help='Starting flight location (tuple). If None, random point.')
-    parser.add_argument('--goal', default=None, help='Target flight location (tuple). If None, random point.')
+    parser.add_argument('--start', default=(25, 37), help='Starting flight location (tuple). If None, random point.')
+    parser.add_argument('--goal', default=(50, 50), help='Target flight location (tuple). If None, random point.') #(36, 37)
     parser.add_argument('--robot_radius', type=int, default=9,
                         help='Size of the robot in order to maintain a minimum distance'
                              'to the obstacles for the A_star, Voronoid and PRM algorithms: m')
@@ -90,15 +90,15 @@ def load_user_input():
     parser.add_argument('--cameras_info', type=dict, default={'front': {"camera_name": "0", "image_type": 0}},
                         help='Dictionary cotaining the camera information: '
                              'alias, camera_name, image_type, pixels_as_float and compress')
-    parser.add_argument('--sample_rates', default={'camera': 60, 'imu': 1000, 'magnetometer': 56,
-                                                   'gps': 56, 'barometer': 56},
+    parser.add_argument('--sample_rates', default={'camera': 30, 'imu': 512, 'magnetometer': 30,
+                                                   'gps': 30, 'barometer': 30},
                         help='Sampling rate for the sensors. Except the camera, the default sampling rates are'
                              ' from the original c++ code, in the simpleParams files for each sensor.')
     parser.add_argument('--navigation_type', type=str, default="A_star",
                         help='Method employed for navigation: A_star, wavefront, Voronoid, RRT_star and PRM')
 
     # Arguments related to the failure factory
-    parser.add_argument('--failure_types', default=['actuator_saturation_dis_lin'],
+    parser.add_argument('--failure_types', default=[],
                         help="Failures types considered during the flight. Options listed in the Failure Factory. It"
                              "needs to be followed by dis or con (or mix), which tells the factory the number of "
                              "options considered for failure and abr or lin, which tells the factory the time component"
@@ -115,6 +115,10 @@ def load_user_input():
     # Arguments for debugging purposes
     parser.add_argument('--plot2D', type=bool, default=False, help='Whether the 2D plots should be shown.')
     parser.add_argument('--plot3D', type=bool, default=False, help='Whether the 3D plots should be shown.')
+
+    # Arguments for PID controller tuning
+    parser.add_argument('--PID_tuning', type=bool, default=True, help='Whether the plotting for PID controller tuning '
+                                                                      'is activated.')
 
     return parser.parse_args()
 

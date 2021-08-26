@@ -6,6 +6,8 @@ import random
 from datetime import datetime
 import keyboard
 from icecream import ic
+import matplotlib.pyplot as plt
+import scipy.integrate as integrate
 
 from OccupancyMap import OccupancyMap
 from GridNavigation import GridNavigation
@@ -26,12 +28,13 @@ class DroneFlight:
     """
 
     def __init__(self, altitude_m, altitude_range_m, cell_size_m, ue4_airsim_factor, robot_radius_m, sensors,
-                 camera_info, sample_rates, min_flight_distance_m=30, max_flight_distance_m=200,
+                 camera_info, sample_rates, clock_speed=1, min_flight_distance_m=30, max_flight_distance_m=200,
                  saved_vertices_filename='object_points', update_saved_vertices=False, plot2D=False, plot3D=True,
-                 vehicle_name='', vehicle_start_position=None, smooth=True, failure_types=None, activate_take_off=True):
+                 PID_tuning=False, vehicle_name='', vehicle_start_position=None, smooth=True, failure_types=None,
+                 activate_take_off=True):
         if vehicle_start_position is None:
             vehicle_start_position = (0, 0, 0)
-        self.altitude_m = altitude_m
+        self.altitude_m = -altitude_m
         self.altitude_range_m = altitude_range_m
         self.cell_size_m = cell_size_m
         self.min_flight_distance_m = min_flight_distance_m
@@ -40,6 +43,7 @@ class DroneFlight:
         self.update_saved_vertices = update_saved_vertices
         self.plot2D = plot2D
         self.plot3D = plot3D
+        self.PID_tuning = PID_tuning
         self.vehicle_name = vehicle_name
         self.vehicle_start_position = vehicle_start_position
         self.smooth = smooth
@@ -53,7 +57,7 @@ class DroneFlight:
         self.ue4_airsim_factor = ue4_airsim_factor
         self.robot_radius_m = robot_radius_m
         self.robot_radius = self.robot_radius_m / self.cell_size_m
-        distances = [altitude_m, altitude_range_m, cell_size_m]
+        distances = [self.altitude_m, self.altitude_range_m, self.cell_size_m]
         altitude_flags = [True, False, False]
         self.altitude, self.altitude_range, self.cell_size = self.distances_to_ue4(distances, altitude_flags)
 
@@ -65,11 +69,14 @@ class DroneFlight:
         self.sensors = sensors
         self.camera_info = camera_info
         self.sample_rates = sample_rates
+        self.clock_speed = clock_speed
         self.sensors = DroneSensors(self.client, self.sensors, self.camera_info,
                                     self.sample_rates, vehicle_name=self.vehicle_name)
 
         self.failure_types = failure_types
-        self.failure_factory = FailureFactory(self.client, self.failure_types, vehicle_name=self.vehicle_name)
+        self.failure_factory = FailureFactory(self.client, self.failure_types, self.clock_speed,
+                                              vehicle_name=self.vehicle_name)
+        self.collision_type = -1
 
         self.activate_take_off = activate_take_off
 
@@ -181,7 +188,7 @@ class DroneFlight:
                 self.env_map.check_obstacle(self.start_grid, self.robot_radius):
             self.start_grid = (random.randint(0, x_dim), random.randint(0, y_dim))
             self.goal_grid = (random.randint(0, x_dim), random.randint(0, y_dim))
-        print(self.start_grid, self.goal_grid)
+        ic(self.start_grid, self.goal_grid)
 
     def navigate_drone_grid(self, navigation_type="A_star", start_point=None, goal_point=None):
         """
@@ -237,11 +244,11 @@ class DroneFlight:
                     success = False
                 if not success:
                     path = path_or
-                    print('Smoothening with a reduction of ' + str(reduction) + ' did not succeed.')
+                    ic('Smoothening with a reduction of ' + str(reduction) + ' did not succeed.')
                     reduction += 0.05
                     reduction = np.round(reduction, 2)
                     if reduction > 1:
-                        print('Smoothening did not succeed.')
+                        ic('Smoothening did not succeed.')
 
         # Translate the path to AirSim coordinates and save the AirSim coordinates of the start and goal locations
         self.path = self.env_map.translate_path_lst_to_Vector3r(
@@ -270,7 +277,7 @@ class DroneFlight:
             if not self.client.isApiControlEnabled(vehicle_name=self.vehicle_name):
                 self.client.enableApiControl(True, vehicle_name=self.vehicle_name)
             # Start up the drone
-            print("arming the drone...")
+            ic("arming the drone...")
             self.client.armDisarm(True, vehicle_name=self.vehicle_name)
 
             # Set up the desired altitude and start hovering the drone in place
@@ -287,14 +294,14 @@ class DroneFlight:
         :return:
         """
         # Start up the drone
-        print("arming the drone...")
+        ic("arming the drone...")
         self.client.armDisarm(True, vehicle_name=self.vehicle_name)
 
         # Check proper take-off
         self.check_take_off()
 
         # AirSim uses NED coordinates so negative axis is up.
-        print("make sure we are hovering at " + str(-self.altitude_m) + " meters...")
+        ic("make sure we are hovering at " + str(-self.altitude_m) + " meters...")
         self.client.moveToZAsync(self.altitude_m, 1, vehicle_name=self.vehicle_name).join()
 
     def check_take_off(self):
@@ -307,19 +314,19 @@ class DroneFlight:
 
         state = self.client.getMultirotorState(vehicle_name=self.vehicle_name)
         if state.landed_state == airsim.LandedState.Landed:
-            print("taking off...")
+            ic("taking off...")
             time.sleep(1)
             self.client.takeoffAsync(vehicle_name=self.vehicle_name).join()
         else:
             self.client.hoverAsync(vehicle_name=self.vehicle_name).join()
 
-        print("Waiting 2 seconds", self.vehicle_name)
+        ic("Waiting 2 seconds", self.vehicle_name)
         time.sleep(2)
-        print("Done 2 seconds", self.vehicle_name)
+        ic("Done 2 seconds", self.vehicle_name)
 
         state = self.client.getMultirotorState(vehicle_name=self.vehicle_name)
         if state.landed_state == airsim.LandedState.Landed:
-            print("take off failed...", self.vehicle_name)
+            ic("take off failed...", self.vehicle_name)
             sys.exit(1)
 
     def select_failure(self):
@@ -348,7 +355,7 @@ class DroneFlight:
         """
         # see https://github.com/Microsoft/AirSim/wiki/moveOnPath-demo
         # this method is async and we are not waiting for the result since we are passing timeout_sec=0.
-        print("flying on path...")
+        ic("flying on path...")
         # self.client.moveOnPathAsync(self.path, 12, 120, airsim.DrivetrainType.ForwardOnly,
         #                             airsim.YawMode(False, 0), 20, 1)
         self.client.moveOnPathAsync(self.path, 12, 120, airsim.DrivetrainType.ForwardOnly,
@@ -414,31 +421,126 @@ class DroneFlight:
         :return:
         """
         self.sensors.start_signal_sensors_data_storage()
+        if self.PID_tuning:
+            self.client.setPositionActivation(True)
+            self.client.setPwmActivation(True)
+            failed = 1
+        else:
+            failed = 0
 
         not_arrived = 1
-        collision_type = 0
-        failed = 0
+        self.collision_type = 0
+        start_time = time.time()
         # While the drone has not reached destination or collided
         while not_arrived:
-            self.sensors.store_sensors_data()
+            if not self.PID_tuning:
+                self.sensors.store_sensors_data()
 
             # Print the timestamp
             now = datetime.now()
             current_time = now.strftime("%H:%M:%S")
-            print("Current Time =", current_time)
+            ic("Current Time =", current_time)
 
             # Obtain the distance to destination
-            not_arrived, distance, collision_type = self.check_goal_arrival(failed)
-            failed = self.failure_factory.execute_failures(distance)
+            not_arrived, distance, self.collision_type = self.check_goal_arrival(failed)
+            if not self.PID_tuning:
+                failed = self.failure_factory.execute_failures(distance)
 
             # Manual break in the collection of data
             if keyboard.is_pressed('K'):
                 print('The letter K has been pressed.')
                 break
+            if self.PID_tuning:
+                end_time = time.time()
+                if (end_time-start_time) > 20:
+                    not_arrived, distance, self.collision_type = [0, 100, 3]
 
         # Once the drone has arrived to its destination, the sensor and failure data is stored in their respective files
-        self.failure_factory.write_to_file(collision_type, self.sensors.folder_name)
-        self.sensors.write_to_file()
+        if not self.PID_tuning:
+            self.failure_factory.write_to_file(self.collision_type, self.sensors.folder_name)
+            self.sensors.write_to_file()
+
+    def controller_tuning_cost_function(self):
+        """
+        Method which computes the cost function used for the tuning of the PID controller.
+        :return:
+        """
+        print(self.collision_type)
+        if self.collision_type:
+            total_error = float("inf")
+            return total_error
+
+        position = self.client.getPositionStoredDataVec(self.vehicle_name)
+        PWMs = self.client.getPwmStoredDataVec(self.vehicle_name)
+        self.client.cleanPositionStoredData()
+        self.client.cleanPwmStoredData()
+
+        path_x = []
+        path_y = []
+        path_z = []
+        for i in range(len(self.path)):
+            path_x.append(self.path[i].x_val)
+            path_y.append(self.path[i].y_val)
+            path_z.append(self.path[i].z_val)
+        # self.controller_tuning_plotting(path_x, path_y, path_z, position, PWMs)
+
+        error_xy = abs(integrate.trapezoid(path_y, path_x) - integrate.trapezoid(position["positions_y"],
+                                                                                 position["positions_x"]))
+
+        error_z = abs(integrate.trapezoid(path_y, path_z) - integrate.trapezoid(position["positions_y"],
+                                                                                 position["positions_z"]))
+
+        total_error = error_xy + 2 * error_z
+
+        return total_error
+
+    def controller_tuning_plotting(self, path_x, path_y, path_z, position, PWMs):
+        """
+        Method to plot the desired and true x-y flight path followed by the drone in order to tune the PID controller.
+        :return:
+        """
+        PWMs_points = range(len(PWMs["PWM_1"]))
+
+        plt.figure(1)
+        plt.plot(path_x, path_y, 'r-', label='Desired flight path')
+        plt.plot(position["positions_x"], position["positions_y"], 'b-', label='True flight path')
+        for i in range(0, len(position["positions_x"]), 1000):
+            plt.plot(position["positions_x"][i], position["positions_y"][i], 'bo')
+        plt.title("Desired and true x-y drone path")
+        plt.xlabel("x-coordinate")
+        plt.ylabel("y-coordinate")
+        plt.grid(True)
+        plt.legend()
+        plt.show()
+
+        plt.figure(2)
+        plt.plot(path_x, path_z, 'r-', label='Desired altitude')
+        plt.plot(position["positions_x"], position["positions_z"], 'b-', label='True altitude')
+        for i in range(0, len(position["positions_x"]), 1000):
+            plt.plot(position["positions_x"][i], position["positions_z"][i], 'bo')
+        plt.title("Desired and true x-z drone path")
+        plt.xlabel("x-coordinate")
+        plt.ylabel("z-coordinate")
+        plt.grid(True)
+        plt.legend()
+        plt.show()
+
+        plt.figure(3)
+        plt.plot(PWMs_points, PWMs["PWM_1"], 'r-', label='Front right propeller')
+        plt.plot(PWMs_points, PWMs["PWM_2"], 'b-', label='Back left propeller')
+        plt.plot(PWMs_points, PWMs["PWM_3"], 'g-', label='Front left propeller')
+        plt.plot(PWMs_points, PWMs["PWM_4"], 'm-', label='Back right propeller')
+        for i in range(0, len(PWMs["PWM_1"]), 1000):
+            plt.plot(PWMs_points[i], PWMs["PWM_1"][i], 'ro')
+            plt.plot(PWMs_points[i], PWMs["PWM_2"][i], 'bo')
+            plt.plot(PWMs_points[i], PWMs["PWM_3"][i], 'go')
+            plt.plot(PWMs_points[i], PWMs["PWM_4"][i], 'mo')
+        plt.title("Motor coefficients [0-1]")
+        plt.xlabel("PWM")
+        plt.ylabel("Measurement")
+        plt.grid(True)
+        plt.legend()
+        plt.show()
 
     def reset(self, reset_failures_airsim: bool = False):
         """
@@ -448,6 +550,9 @@ class DroneFlight:
         """
         self.client.reset(reset_failures_airsim)
         self.failure_factory.reset()
+        self.sensors.restart_sensors()
+        self.client.cleanPositionStoredData()
+        self.client.cleanPwmStoredData()
 
     def run(self, navigation_type="A_star", start_point=None, goal_point=None, min_h=None, max_h=None,
             activate_reset=True):
@@ -463,7 +568,7 @@ class DroneFlight:
         :param activate_reset: whether the airsim client needs to be reseted after the run
         :return:
         """
-        if min_h is not None and max_h is not None:
+        if self.altitude_m > 0:
             h = -random.randint(min_h, max_h)
             self.extract_occupancy_map(h)
             ic(h)
@@ -479,10 +584,14 @@ class DroneFlight:
         self.select_failure()
         self.fly_trajectory()
         self.obtain_sensor_data()
+        if self.PID_tuning:
+            total_error = self.controller_tuning_cost_function()
+            self.reset(True)
+            return total_error
+
         if activate_reset:
             self.reset(True)
-        time.sleep(2)
-
+        # time.sleep(2)
 
 if __name__ == "__main__":
     # User input
@@ -494,6 +603,7 @@ if __name__ == "__main__":
                                args.sample_rate, min_flight_distance_m=args.min_flight_distance_m,
                                saved_vertices_filename=args.saved_vertices_filename,
                                update_saved_vertices=args.update_saved_vertices, plot2D=args.plot2D, plot3D=args.plot3D,
+                               PID_tuning=args.PID_tuning,
                                failure_types=args.failure_types, activate_take_off=args.activate_take_off)
     drone_flight.run(navigation_type=args.navigation_type, start_point=args.start, goal_point=args.goal)
 
@@ -515,15 +625,15 @@ if __name__ == "__main__":
 #
 #
 #
-import airsim
-import time
-client = airsim.MultirotorClient()
-client.armDisarm(True)
-client.simGetImages([airsim.ImageRequest("0", 0)])
-client.setBarometerActivation(True, 56, False)
-time.sleep(10)
-potato = client.getBarometerStoredDataVec()
-client.cleanBarometerStoredData()
+# import airsim
+# import time
+# client = airsim.MultirotorClient()
+# client.armDisarm(True)
+# client.simGetImages([airsim.ImageRequest("0", 0)])
+# client.setBarometerActivation(True, 56, False)
+# time.sleep(10)
+# potato = client.getBarometerStoredDataVec()
+# client.cleanBarometerStoredData()
 #
 # print(len(potato['timestamps']))
 # print((potato['timestamps'][-1] - potato['timestamps'][0])/1e9)
@@ -552,8 +662,22 @@ client.cleanBarometerStoredData()
 # print((potato['timestamps'][-1] - potato['timestamps'][0])/1e9)
 
 
-# 22.4
-# 15.61
-# 19.43
-# [times[i+1] - times[i] for i in range(len(times)-1)]
+
+# import os
 # times = [int(i[:-4]) for i in os.listdir("E:\Master_project\Simulator\AirSim_simulator\AirSim\PythonClient\multirotor\Occupancy_grid\Sensor_data\20210715-163858_1\front")[:-1]]
+# time_passed = [times[i+1] - times[i] for i in range(len(times)-1)]
+# [abs(time_passed[i+1] - time_passed[i]) for i in range(len(time_passed)-1)]
+#
+#
+# import os
+# times = [int(i[15:-4]) for i in os.listdir("E:\Master_project\Simulator\AirSim_simulator\AirSim\PythonClient\multirotor\Occupancy_grid\Sensor_data\Test\\2021-07-21-16-52-37\images")[:-1]]
+# time_passed = [times[i+1] - times[i] for i in range(len(times)-1)]
+# [abs(time_passed[i+1] - time_passed[i]) for i in range(len(time_passed)-1)]
+
+
+# import time
+# import airsim
+# client = airsim.MultirotorClient()
+# client.startRecording()
+# time.sleep(10)
+# client.stopRecording()

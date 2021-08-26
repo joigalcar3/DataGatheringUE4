@@ -5,6 +5,7 @@ from matplotlib.path import Path
 import pickle
 import os
 from math import sqrt
+from icecream import ic
 
 from Plotter3D import *
 from utils import counter_clockwise_ordering, compute_distance_points, obtain_outer_edge
@@ -77,7 +78,7 @@ class OccupancyMap:
         self.extent_y = int(np.ceil((max_xy[1] - min_xy[1]) / self.cell_size))   # Number of cells in the y direction
         self.limit_x_min = int(min_xy[0]) - (1 * (np.sign(min_xy[0]) == -1))     # Minimum x-coordinate in the UE4 reference frame
         self.limit_y_min = int(min_xy[1]) - (1 * (np.sign(min_xy[0]) == -1))     # Minimum y-coordinate in the UE4 reference frame
-        print("Real environment dimensions are: " + str(self.extent_x) + " x " + str(self.extent_y))
+        ic("Real environment dimensions are: " + str(self.extent_x) + " x " + str(self.extent_y))
         self.grid = np.zeros([self.extent_x, self.extent_y], dtype=np.bool)
         self.object_grid = np.zeros([self.extent_x, self.extent_y], dtype=np.bool)
 
@@ -236,7 +237,7 @@ class OccupancyMap:
 
                 # A grid is created only with the internal object points
                 self.object_grid[internal_points[i, 0], internal_points[i, 1]] = True
-            print(name)
+            ic(name)
 
         return self.object_grid_coord_all
 
@@ -258,7 +259,7 @@ class OccupancyMap:
         for name in object_names:
             plt.scatter(self.filtered_points[name][:, 0], self.filtered_points[name][:, 1])
             total_number_points += self.filtered_points[name][:, 0].shape[0]
-        print("Total number of points: " + str(total_number_points))
+        ic("Total number of points: " + str(total_number_points))
         plt.grid(True)
         plt.show()
 
