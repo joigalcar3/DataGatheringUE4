@@ -60,11 +60,19 @@ class DataGathering:
         :return:
         """
         self.drone_flight.reset(True)
-        x_gains = airsim.PIDGains(x[0], x[1], x[2])
-        y_gains = airsim.PIDGains(x[3], x[4], x[5])
-        z_gains = airsim.PIDGains(x[6], x[7], x[8])
+        V_x_gains = airsim.PIDGains(x[0], x[1], 0)
+        V_y_gains = airsim.PIDGains(x[2], x[3], 0)
+        V_z_gains = airsim.PIDGains(x[4], x[5], 0)
+        angle_x_gains = airsim.PIDGains(x[6], x[7], 0)
+        angle_y_gains = airsim.PIDGains(x[8], x[9], 0)
+        angle_z_gains = airsim.PIDGains(x[10], x[11], 0)
+
         self.drone_flight.client.setVelocityControllerGains(
-            airsim.VelocityControllerGains(x_gains=x_gains, y_gains=y_gains, z_gains=z_gains))
+            airsim.VelocityControllerGains(x_gains=V_x_gains, y_gains=V_y_gains, z_gains=V_z_gains))
+        self.drone_flight.client.setAngleLevelControllerGains(
+            airsim.AngleLevelControllerGains(roll_gains=angle_x_gains, pitch_gains=angle_y_gains,
+                                             yaw_gains=angle_z_gains))
+
         total_error = self.drone_flight.run(navigation_type=self.navigation_type, start_point=self.args.start,
                                             goal_point=self.args.goal, min_h=self.flight_altitudes[0],
                                             max_h=self.flight_altitudes[1], activate_reset=True)
@@ -79,14 +87,23 @@ class DataGathering:
         Method which carries out the PSO optimisation of the PID controller values
         :return:
         """
-        ub = [4] * 9  # upper bound
-        lb = [0] * 9  # lower bound
+        ub = [4] * 12  # upper bound
+        lb = [0] * 12  # lower bound
         xopt_CNN, fopt_CNN = pso(self.pso_pid_function, lb, ub, debug=True,
                                  swarmsize=100, maxiter=20)  # PSO optimisation
+        # print("The best PID parameters are as follows:\n"
+        #       "x_gains = {} \n"
+        #       "y_gains = {} \n"
+        #       "z_gains = {} \n".format(xopt_CNN[:3], xopt_CNN[3:6], xopt_CNN[6:]))
         print("The best PID parameters are as follows:\n"
-              "x_gains = {} \n"
-              "y_gains = {} \n"
-              "z_gains = {} \n".format(xopt_CNN[:3], xopt_CNN[3:6], xopt_CNN[6:]))
+              "V_x_gains = {} \n"
+              "V_y_gains = {} \n"
+              "V_z_gains = {} \n"
+              "angle_x_gains = {} \n"
+              "angle_y_gains = {} \n"
+              "angle_z_gains = {} \n"
+              .format(xopt_CNN[:2] + [0], xopt_CNN[2:4] + [0], xopt_CNN[4:6] + [0], xopt_CNN[6:8] + [0],
+                      xopt_CNN[8:10] + [0], xopt_CNN[10:12] + [0]))
         print("The cost function value is: {}".format(fopt_CNN))
 
     def gather_data_single_run(self):
