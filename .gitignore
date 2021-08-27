@@ -137,3 +137,5 @@ Dummy.py
 *.p
 
 Sensor_data/Test/
+
+.idea/
