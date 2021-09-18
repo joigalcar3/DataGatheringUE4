@@ -1,5 +1,6 @@
 import airsim
 import numpy as np
+from math import atan2, pi, sin, cos, degrees
 import time
 import sys
 import random
@@ -15,6 +16,7 @@ from DroneSensors import DroneSensors
 from utils import compute_distance_points
 from user_input import load_user_input
 from FailureFactory import FailureFactory
+from ControllerTuning import ControllerTuning
 
 
 # TODO: take into account measurement time when considering the measurement frequency
@@ -30,8 +32,8 @@ class DroneFlight:
     def __init__(self, altitude_m, altitude_range_m, cell_size_m, ue4_airsim_factor, robot_radius_m, sensors,
                  camera_info, sample_rates, clock_speed=1, min_flight_distance_m=30, max_flight_distance_m=200,
                  saved_vertices_filename='object_points', update_saved_vertices=False, plot2D=False, plot3D=True,
-                 PID_tuning=False, vehicle_name='', vehicle_start_position=None, smooth=True, failure_types=None,
-                 activate_take_off=True):
+                 controller_tuning_switch=False, data_gather_types=None, plotting_controller_signals=False,
+                 vehicle_name='', vehicle_start_position=None, smooth=True, failure_types=None, activate_take_off=True):
         if vehicle_start_position is None:
             vehicle_start_position = (0, 0, 0)
         self.altitude_m = -altitude_m
@@ -43,7 +45,6 @@ class DroneFlight:
         self.update_saved_vertices = update_saved_vertices
         self.plot2D = plot2D
         self.plot3D = plot3D
-        self.PID_tuning = PID_tuning
         self.vehicle_name = vehicle_name
         self.vehicle_start_position = vehicle_start_position
         self.smooth = smooth
@@ -53,6 +54,7 @@ class DroneFlight:
         self.start_world = None
         self.goal_world = None
         self.path = None
+        self.heading_start = None
 
         self.ue4_airsim_factor = ue4_airsim_factor
         self.robot_radius_m = robot_radius_m
@@ -79,6 +81,13 @@ class DroneFlight:
         self.collision_type = -1
 
         self.activate_take_off = activate_take_off
+
+        # Controller tuning
+        self.controller_tuning_switch = controller_tuning_switch
+        self.data_gather_types = data_gather_types
+        self.plotting_controller_signals = plotting_controller_signals
+        self.controller_tuning = ControllerTuning(self.client, self.controller_tuning_switch, self.data_gather_types,
+                                                  self.plotting_controller_signals, vehicle_name=self.vehicle_name)
 
     def distances_to_ue4(self, distances, altitude_flags):
         """
@@ -239,6 +248,8 @@ class DroneFlight:
             while not success and reduction <= 1:
                 try:
                     path, collision = nav.smooth_B_spline(path_or, reduction=reduction)
+                    if not collision:
+                        path, collision = nav.smooth_cubic_spline(path)
                     success = not collision
                 except:
                     success = False
@@ -251,12 +262,22 @@ class DroneFlight:
                         ic('Smoothening did not succeed.')
 
         # Translate the path to AirSim coordinates and save the AirSim coordinates of the start and goal locations
-        self.path = self.env_map.translate_path_lst_to_Vector3r(
-            self.positions_world_to_drone_frame(self.env_map.translate_path_to_world_coord(path, self.altitude)))
+        path_world_coord = self.env_map.translate_path_to_world_coord(path, self.altitude)
+        path_drone_coord = self.positions_world_to_drone_frame(path_world_coord)
+        self.compute_starting_heading(path_drone_coord)
+        self.path = self.env_map.translate_path_lst_to_Vector3r(path_drone_coord)
         self.start_world = self.position_world_to_drone_frame(
             self.env_map.translate_point_to_world_coord(self.start_grid, 0))
         self.goal_world = self.position_world_to_drone_frame(
             self.env_map.translate_point_to_world_coord(self.goal_grid, 0))
+
+    def compute_starting_heading(self, path):
+        start_point = path[0]
+        second_point = path[1]
+        heading_vector = [second_point[0]-start_point[0], second_point[1]-start_point[1]]
+        self.heading_start = pi/2 - atan2(heading_vector[0], heading_vector[1])
+        if self.heading_start > pi:
+            self.heading_start = 2*pi-self.heading_start
 
     def teleport_drone_start(self):
         """
@@ -270,6 +291,10 @@ class DroneFlight:
         pose = self.client.simGetVehiclePose(vehicle_name=self.vehicle_name)
         pose.position.x_val = self.start_world[0]
         pose.position.y_val = self.start_world[1]
+        pose.orientation.x_val = 0
+        pose.orientation.y_val = 0
+        pose.orientation.z_val = sin(self.heading_start/2)
+        pose.orientation.w_val = cos(self.heading_start/2)
 
         # In the case that it is not desired to carry out the take-off
         if not self.activate_take_off:
@@ -282,8 +307,12 @@ class DroneFlight:
 
             # Set up the desired altitude and start hovering the drone in place
             pose.position.z_val = self.altitude_m
-            self.client.moveToZAsync(self.altitude_m, 0.1, vehicle_name=self.vehicle_name)
-            time.sleep(0.5)
+            # self.client.moveToZAsync(self.altitude_m, 0.1, vehicle_name=self.vehicle_name, lookahead=0.6,
+            #                          adaptive_lookahead=1)
+            # time.sleep(0.5)
+
+        # Set desired yaw angle once it has been teleported
+        self.client.setTeleportYawRef(degrees(self.heading_start))
 
         # Move vehicle to desired position
         self.client.simSetVehiclePose(pose, True, vehicle_name=self.vehicle_name)
@@ -358,8 +387,8 @@ class DroneFlight:
         ic("flying on path...")
         # self.client.moveOnPathAsync(self.path, 12, 120, airsim.DrivetrainType.ForwardOnly,
         #                             airsim.YawMode(False, 0), 20, 1)
-        self.client.moveOnPathAsync(self.path, 12, 120, airsim.DrivetrainType.ForwardOnly,
-                                    airsim.YawMode(False, 0), -1, 0, vehicle_name=self.vehicle_name)
+        self.client.moveOnPathAsync(self.path, 1, 120, airsim.DrivetrainType.ForwardOnly,
+                                    airsim.YawMode(False, 0), 2, 0, vehicle_name=self.vehicle_name)
 
     def check_goal_arrival(self, failed):
         """
@@ -420,20 +449,18 @@ class DroneFlight:
         Method that retrieves the data from the sensors given the sample rate and executes the failure.
         :return:
         """
+        # Starting to store the data from the sensors and for tuning the controller
         self.sensors.start_signal_sensors_data_storage()
-        if self.PID_tuning:
-            self.client.setPositionActivation(True)
-            self.client.setPwmActivation(True)
-            failed = 1
-        else:
-            failed = 0
+        self.controller_tuning.initialize_data_gathering()
+        failed = int(self.controller_tuning_switch)
 
         not_arrived = 1
         self.collision_type = 0
         start_time = time.time()
         # While the drone has not reached destination or collided
         while not_arrived:
-            if not self.PID_tuning:
+            # When tuning the controller, storing the sensor data is not required
+            if not self.controller_tuning_switch:
                 self.sensors.store_sensors_data()
 
             # Print the timestamp
@@ -443,104 +470,26 @@ class DroneFlight:
 
             # Obtain the distance to destination
             not_arrived, distance, self.collision_type = self.check_goal_arrival(failed)
-            if not self.PID_tuning:
+            # When tuning the controller, executing failures is not required
+            if not self.controller_tuning_switch:
                 failed = self.failure_factory.execute_failures(distance)
 
             # Manual break in the collection of data
             if keyboard.is_pressed('K'):
                 print('The letter K has been pressed.')
                 break
-            if self.PID_tuning:
+
+            # When tuning the controller, the maximum flight time is limited --> 20 sec if clock speed is 4x
+            if self.controller_tuning_switch:
                 end_time = time.time()
-                if (end_time-start_time) > 20:
+                if (end_time-start_time) > 160:
                     not_arrived, distance, self.collision_type = [0, 100, 3]
 
         # Once the drone has arrived to its destination, the sensor and failure data is stored in their respective files
-        if not self.PID_tuning:
+        # When the controller is being tuned, failure and sensor information is not collected
+        if not self.controller_tuning_switch:
             self.failure_factory.write_to_file(self.collision_type, self.sensors.folder_name)
             self.sensors.write_to_file()
-
-    def controller_tuning_cost_function(self):
-        """
-        Method which computes the cost function used for the tuning of the PID controller.
-        :return:
-        """
-        print(self.collision_type)
-        if self.collision_type:
-            total_error = float("inf")
-            return total_error
-
-        position = self.client.getPositionStoredDataVec(self.vehicle_name)
-        PWMs = self.client.getPwmStoredDataVec(self.vehicle_name)
-        self.client.cleanPositionStoredData()
-        self.client.cleanPwmStoredData()
-
-        path_x = []
-        path_y = []
-        path_z = []
-        for i in range(len(self.path)):
-            path_x.append(self.path[i].x_val)
-            path_y.append(self.path[i].y_val)
-            path_z.append(self.path[i].z_val)
-        # self.controller_tuning_plotting(path_x, path_y, path_z, position, PWMs)
-
-        error_xy = abs(integrate.trapezoid(path_y, path_x) - integrate.trapezoid(position["positions_y"],
-                                                                                 position["positions_x"]))
-
-        error_z = abs(integrate.trapezoid(path_y, path_z) - integrate.trapezoid(position["positions_y"],
-                                                                                 position["positions_z"]))
-
-        total_error = error_xy + 2 * error_z
-
-        return total_error
-
-    def controller_tuning_plotting(self, path_x, path_y, path_z, position, PWMs):
-        """
-        Method to plot the desired and true x-y flight path followed by the drone in order to tune the PID controller.
-        :return:
-        """
-        PWMs_points = range(len(PWMs["PWM_1"]))
-
-        plt.figure(1)
-        plt.plot(path_x, path_y, 'r-', label='Desired flight path')
-        plt.plot(position["positions_x"], position["positions_y"], 'b-', label='True flight path')
-        for i in range(0, len(position["positions_x"]), 1000):
-            plt.plot(position["positions_x"][i], position["positions_y"][i], 'bo')
-        plt.title("Desired and true x-y drone path")
-        plt.xlabel("x-coordinate")
-        plt.ylabel("y-coordinate")
-        plt.grid(True)
-        plt.legend()
-        plt.show()
-
-        plt.figure(2)
-        plt.plot(path_x, path_z, 'r-', label='Desired altitude')
-        plt.plot(position["positions_x"], position["positions_z"], 'b-', label='True altitude')
-        for i in range(0, len(position["positions_x"]), 1000):
-            plt.plot(position["positions_x"][i], position["positions_z"][i], 'bo')
-        plt.title("Desired and true x-z drone path")
-        plt.xlabel("x-coordinate")
-        plt.ylabel("z-coordinate")
-        plt.grid(True)
-        plt.legend()
-        plt.show()
-
-        plt.figure(3)
-        plt.plot(PWMs_points, PWMs["PWM_1"], 'r-', label='Front right propeller')
-        plt.plot(PWMs_points, PWMs["PWM_2"], 'b-', label='Back left propeller')
-        plt.plot(PWMs_points, PWMs["PWM_3"], 'g-', label='Front left propeller')
-        plt.plot(PWMs_points, PWMs["PWM_4"], 'm-', label='Back right propeller')
-        for i in range(0, len(PWMs["PWM_1"]), 1000):
-            plt.plot(PWMs_points[i], PWMs["PWM_1"][i], 'ro')
-            plt.plot(PWMs_points[i], PWMs["PWM_2"][i], 'bo')
-            plt.plot(PWMs_points[i], PWMs["PWM_3"][i], 'go')
-            plt.plot(PWMs_points[i], PWMs["PWM_4"][i], 'mo')
-        plt.title("Motor coefficients [0-1]")
-        plt.xlabel("PWM")
-        plt.ylabel("Measurement")
-        plt.grid(True)
-        plt.legend()
-        plt.show()
 
     def reset(self, reset_failures_airsim: bool = False):
         """
@@ -551,8 +500,7 @@ class DroneFlight:
         self.client.reset(reset_failures_airsim)
         self.failure_factory.reset()
         self.sensors.restart_sensors()
-        self.client.cleanPositionStoredData()
-        self.client.cleanPwmStoredData()
+        self.controller_tuning.reset()
 
     def run(self, navigation_type="A_star", start_point=None, goal_point=None, min_h=None, max_h=None,
             activate_reset=True):
@@ -568,6 +516,7 @@ class DroneFlight:
         :param activate_reset: whether the airsim client needs to be reseted after the run
         :return:
         """
+        # Obtain occupancy map from the AirSim environment
         if self.altitude_m > 0:
             h = -random.randint(min_h, max_h)
             self.extract_occupancy_map(h)
@@ -575,23 +524,34 @@ class DroneFlight:
         else:
             self.extract_occupancy_map()
 
+        # Navigate the drone within occupancy map and translate to AirSim path points
         self.navigate_drone_grid(navigation_type=navigation_type, start_point=start_point, goal_point=goal_point)
+
+        # Teleport drone to start
         self.teleport_drone_start()
         time.sleep(2)
         if self.activate_take_off:
             self.take_off()
             time.sleep(2)
-        self.select_failure()
-        self.fly_trajectory()
-        self.obtain_sensor_data()
-        if self.PID_tuning:
-            total_error = self.controller_tuning_cost_function()
-            self.reset(True)
-            return total_error
 
+        # Choose drone failure
+        self.select_failure()
+
+        # Fly drone trajectory
+        self.fly_trajectory()
+
+        # Collect all sensor data
+        self.obtain_sensor_data()
+
+        # Execute methods used for controller tuning
+        total_error = self.controller_tuning.tuning_cost_function(self.collision_type, self.path)
+        self.controller_tuning.scope_plotting_signals()
+
+        # Reset all the stored values from the flight
         if activate_reset:
             self.reset(True)
-        # time.sleep(2)
+        return total_error
+
 
 if __name__ == "__main__":
     # User input

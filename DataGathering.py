@@ -36,7 +36,10 @@ class DataGathering:
                                         max_flight_distance_m=self.args.max_flight_distance_m,
                                         saved_vertices_filename=self.args.saved_vertices_filename,
                                         update_saved_vertices=self.args.update_saved_vertices, plot2D=self.args.plot2D,
-                                        plot3D=self.args.plot3D, PID_tuning=self.args.PID_tuning,
+                                        plot3D=self.args.plot3D,
+                                        controller_tuning_switch=self.args.controller_tuning_switch,
+                                        data_gather_types=self.args.data_gather_types,
+                                        plotting_controller_signals=self.args.plotting_controller_signals,
                                         vehicle_name=self.vehicle_name,
                                         vehicle_start_position=self.vehicle_start_position, smooth=self.args.smooth,
                                         failure_types=self.args.failure_types,
@@ -49,9 +52,18 @@ class DataGathering:
         """
         self.drone_flight.reset(True)
         for run in range(self.number_runs):
-            self.drone_flight.run(navigation_type=self.navigation_type, start_point=self.args.start,
-                                  goal_point=self.args.goal, min_h=self.flight_altitudes[0],
-                                  max_h=self.flight_altitudes[1], activate_reset=True)
+            _ = self.drone_flight.run(navigation_type=self.navigation_type, start_point=self.args.start,
+                                      goal_point=self.args.goal, min_h=self.flight_altitudes[0],
+                                      max_h=self.flight_altitudes[1], activate_reset=True)
+
+    def gather_data_single_run(self):
+        """
+        Prepares and launches a single run or drone flight
+        :return:
+        """
+        self.drone_flight.run(navigation_type=self.navigation_type, start_point=self.args.start,
+                              goal_point=self.args.goal, min_h=self.flight_altitudes[0],
+                              max_h=self.flight_altitudes[1], activate_reset=False)
 
     def pso_pid_function(self, x):
         """
@@ -106,15 +118,6 @@ class DataGathering:
                       xopt_CNN[8:10] + [0], xopt_CNN[10:12] + [0]))
         print("The cost function value is: {}".format(fopt_CNN))
 
-    def gather_data_single_run(self):
-        """
-        Prepares and launches a single run or drone flight
-        :return:
-        """
-        self.drone_flight.run(navigation_type=self.navigation_type, start_point=self.args.start,
-                              goal_point=self.args.goal, min_h=self.flight_altitudes[0],
-                              max_h=self.flight_altitudes[1], activate_reset=False)
-
 
 if __name__ == "__main__":
     import json
@@ -122,7 +125,7 @@ if __name__ == "__main__":
     args = load_user_input()
     # Debugging with icecream
     gettrace = getattr(sys, 'gettrace', None)
-    if gettrace() and not args.PID_tuning:
+    if gettrace() and not args.PSO_tuning_switch:
         ic.enable()
     else:
         ic.disable()
@@ -136,7 +139,7 @@ if __name__ == "__main__":
     start_coord = (coord['X'], coord['Y'], coord['Z'])
 
     data_gathering = DataGathering(vehicle_name=vehicle_name, vehicle_start_position=start_coord)
-    if args.PID_tuning:
+    if args.PSO_tuning_switch:
         data_gathering.pso_pid_tuning()
     else:
         data_gathering.gather_data_consecutive_runs()

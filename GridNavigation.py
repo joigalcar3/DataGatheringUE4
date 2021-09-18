@@ -5,6 +5,7 @@ from PythonRobotics.PathPlanning.InformedRRTStar.informed_rrt_star import Inform
 from PythonRobotics.PathPlanning.AStar.a_star import AStarPlanner
 from PythonRobotics.PathPlanning.BSplinePath.bspline_path import approximate_b_spline_path, interpolate_b_spline_path
 from PythonRobotics.PathPlanning.ProbabilisticRoadMap.probabilistic_road_map import prm_planning
+from PythonRobotics.PathPlanning.CubicSpline.cubic_spline_planner import Spline2D
 from user_input import load_user_input
 from math import isclose
 
@@ -209,6 +210,41 @@ class GridNavigation:
 
         if self.plotter_3D and not collision:
             self.om.plot_trajectory_3d_grid(path_a)
+
+        return path_a, collision
+
+    def smooth_cubic_spline(self, path):
+        """
+        Cubic spline navigation path smoother in continuous space as explained in https://pythonrobotics.readthedocs.io/en/latest/
+        :param path: original path from one of the other navigation algorithms
+        :return:
+        """
+        # Obtain the x and y coordinates of the points along the path
+        way_point_x = [i[0] for i in path]
+        way_point_y = [i[1] for i in path]
+
+        sp = Spline2D(way_point_x, way_point_y)
+        ds = 1  # [m] distance of each intepolated points
+        s = np.arange(0, sp.s[-1], ds)
+        rx, ry = [], []
+        for i_s in s:
+            ix, iy = sp.calc_position(i_s)
+            rx.append(ix)
+            ry.append(iy)
+        rx.append(way_point_x[-1])
+        ry.append(way_point_y[-1])
+        path_a = [(i, j) for i, j in zip(rx, ry)]
+        collision = self.check_collision(path_a)
+        if self.plotter_2D and not collision:
+            plt.plot(way_point_x, way_point_y, '-og', label="way points")
+            plt.plot(rx, ry, '-r', label="Approximated cubic spline path")
+            plt.grid(True)
+            plt.legend()
+            plt.axis("equal")
+            plt.show()
+
+        if self.plotter_3D and not collision:
+            self.om.plot_trajectory_3d_grid(path_a, color='red')
 
         return path_a, collision
 

@@ -78,7 +78,8 @@ def load_user_input():
     parser.add_argument('--max_flight_distance_m', type=int, default=200,
                         help='Maximum distance that a drone must fly in order to be considered a flight')
     parser.add_argument('--start', default=(25, 37), help='Starting flight location (tuple). If None, random point.')
-    parser.add_argument('--goal', default=(50, 50), help='Target flight location (tuple). If None, random point.') #(36, 37)
+    parser.add_argument('--goal', default=(50, 50),
+                        help='Target flight location (tuple). If None, random point.')  # (36, 37)
     parser.add_argument('--robot_radius', type=int, default=9,
                         help='Size of the robot in order to maintain a minimum distance'
                              'to the obstacles for the A_star, Voronoid and PRM algorithms: m')
@@ -116,12 +117,46 @@ def load_user_input():
     parser.add_argument('--plot2D', type=bool, default=False, help='Whether the 2D plots should be shown.')
     parser.add_argument('--plot3D', type=bool, default=False, help='Whether the 3D plots should be shown.')
 
-    # Arguments for PID controller tuning
-    parser.add_argument('--PID_tuning', type=bool, default=True, help='Whether the plotting for PID controller tuning '
-                                                                      'is activated.')
+    # Arguments for controller tuning
+    parser.add_argument('--controller_tuning_switch', type=bool, default=True,
+                        help='Whether the plotting for PID controller tuning is activated.')
+    parser.add_argument('--PSO_tuning_switch', type=bool, default=False,
+                        help='Whether the plotting for PID controller tuning is activated.')
+    parser.add_argument('--data_gather_types', default=['position', 'posref', 'yawref', 'orientation', 'velref', 'vel',
+                                                        'pqrref', 'pqr', 'omegas', 'thrustref', 'accref',
+                                                        'positionintegrator', 'thrustpi', 'poserror', 'poserrordot'],
+                        help='Data that has to be gathered for the controller tuning')
+    parser.add_argument('--plotting_controller_signals', default=[['position.positions_x', 'posref.pos_ref_x'],
+                                                                  ['position.positions_y', 'posref.pos_ref_y'],
+                                                                  ['position.positions_z', 'posref.pos_ref_z'],
+                                                                  ['orientation.orientation_z',
+                                                                   'yawref.yaw_ref_corrected'],
+                                                                  ['yawref.yaw_ref', 'yawref.yaw_ref_corrected'],
+                                                                  ['velref.vel_ref_x', 'vel.vel_x'],
+                                                                  ['velref.vel_ref_y', 'vel.vel_y'],
+                                                                  ['velref.vel_ref_z', 'vel.vel_z'],
+                                                                  ['pqrref.pqr_ref_x', 'pqr.pqr_x'],
+                                                                  ['pqrref.pqr_ref_y', 'pqr.pqr_y'],
+                                                                  ['pqrref.pqr_ref_z', 'pqr.pqr_z'],
+                                                                  ['omegas.front_left', 'omegas.front_right',
+                                                                   'omegas.back_right', 'omegas.back_left'],
+                                                                  ['thrustref.current_thrust_ref_fb',
+                                                                   'thrustref.current_thrust_ref_ff'],
+                                                                  ['accref.acc_ref_x', 'accref.acc_ref_y',
+                                                                   'accref.acc_ref_z'],
+                                                                  ['positionintegrator.position_integrator_x',
+                                                                   'positionintegrator.position_integrator_y',
+                                                                   'positionintegrator.position_integrator_z'],
+                                                                  ['thrustpi.thrust_P', 'thrustpi.thrust_I'],
+                                                                  ['poserror.pos_error_x',
+                                                                   'poserror.pos_error_y',
+                                                                   'poserror.pos_error_z'],
+                                                                  ['poserrordot.pos_error_dot_x',
+                                                                   'poserrordot.pos_error_dot_y',
+                                                                   'poserrordot.pos_error_dot_z']],
+                        help='Which signals have to be plotted for the tuning of the controller')
 
     return parser.parse_args()
-
 
 # import airsim
 # import time

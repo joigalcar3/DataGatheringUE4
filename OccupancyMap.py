@@ -285,15 +285,16 @@ class OccupancyMap:
         points = np.array([[start[0], start[1]], [goal[0], goal[1]]])
         self.plotter.plot_point_cloud(points, color='r', size=20.0)
 
-    def plot_trajectory_3d_grid(self, path):
+    def plot_trajectory_3d_grid(self, path, color='green'):
         """
         Once the grid has been plotted in 3D, the computed path is plotted with 3D arrows.
+        :param color: color of the arrows that show the path
         :param path: path that the drone must follow
         :return:
         """
         if self.plotter is None:
             self.plot_projected_points_3D_grid()
-        self.plotter.plot_trajectory(path)
+        self.plotter.plot_trajectory(path, color=color)
 
     def translate_path_to_world_coord(self, path, h):
         """

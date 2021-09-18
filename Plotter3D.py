@@ -89,11 +89,11 @@ class Plotter3D(pv.Plotter):
         self.current_grid_actor = self.add_mesh(grid_pv, texture=tex, show_edges=True)
         self.update()
 
-    def plot_pose(self, position, orientation, color='k'):
+    def plot_pose(self, position, orientation, color='k', opacity=0.5):
         arrow = pv.Arrow(start=position,
                          direction=orientation,
                          scale='auto')
-        return self.add_mesh(arrow, color=color)
+        return self.add_mesh(arrow, color=color, opacity=opacity)
 
     def plot_trajectory(self, path, color='green', step=1, height=1):
         cell_size = self.occupancy_grid.cell_size
