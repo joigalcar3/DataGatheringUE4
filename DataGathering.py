@@ -39,6 +39,7 @@ class DataGathering:
                                         plot3D=self.args.plot3D,
                                         controller_tuning_switch=self.args.controller_tuning_switch,
                                         data_gather_types=self.args.data_gather_types,
+                                        plotting_controller_signals_aeo=self.args.plotting_controller_signals_aeo,
                                         plotting_controller_signals=self.args.plotting_controller_signals,
                                         vehicle_name=self.vehicle_name,
                                         vehicle_start_position=self.vehicle_start_position, smooth=self.args.smooth,

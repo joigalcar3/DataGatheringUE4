@@ -77,9 +77,9 @@ def load_user_input():
                         help='Minimum distance that a drone must fly in order to be considered a flight')
     parser.add_argument('--max_flight_distance_m', type=int, default=200,
                         help='Maximum distance that a drone must fly in order to be considered a flight')
-    parser.add_argument('--start', default=(25, 37), help='Starting flight location (tuple). If None, random point.')
+    parser.add_argument('--start', default=(25, 37), help='Starting flight location (tuple). If None, random point.') #(25, 37)
     parser.add_argument('--goal', default=(50, 50),
-                        help='Target flight location (tuple). If None, random point.')  # (36, 37)
+                        help='Target flight location (tuple). If None, random point.')  # (36, 37)  (50, 50)
     parser.add_argument('--robot_radius', type=int, default=9,
                         help='Size of the robot in order to maintain a minimum distance'
                              'to the obstacles for the A_star, Voronoid and PRM algorithms: m')
@@ -99,7 +99,7 @@ def load_user_input():
                         help='Method employed for navigation: A_star, wavefront, Voronoid, RRT_star and PRM')
 
     # Arguments related to the failure factory
-    parser.add_argument('--failure_types', default=[],
+    parser.add_argument('--failure_types', default=[],  #'prop_fly_off_dis_abr', 'actuator_saturation_dis_abr'
                         help="Failures types considered during the flight. Options listed in the Failure Factory. It"
                              "needs to be followed by dis or con (or mix), which tells the factory the number of "
                              "options considered for failure and abr or lin, which tells the factory the time component"
@@ -115,7 +115,7 @@ def load_user_input():
 
     # Arguments for debugging purposes
     parser.add_argument('--plot2D', type=bool, default=False, help='Whether the 2D plots should be shown.')
-    parser.add_argument('--plot3D', type=bool, default=False, help='Whether the 3D plots should be shown.')
+    parser.add_argument('--plot3D', type=bool, default=True, help='Whether the 3D plots should be shown.')
 
     # Arguments for controller tuning
     parser.add_argument('--controller_tuning_switch', type=bool, default=True,
@@ -155,6 +155,13 @@ def load_user_input():
                                                                    'poserrordot.pos_error_dot_y',
                                                                    'poserrordot.pos_error_dot_z']],
                         help='Which signals have to be plotted for the tuning of the controller')
+    parser.add_argument('--plotting_controller_signals_aeo', default=[[['position.positions_y', 'position.positions_x'],
+                                                                       ['posref.pos_ref_y', 'posref.pos_ref_x']],
+                                                                      [['position.positions_y', 'position.positions_x',
+                                                                        'position.positions_z'],
+                                                                       ['posref.pos_ref_y', 'posref.pos_ref_x',
+                                                                        'posref.pos_ref_z']]],
+                        help='Signals to be plotted against each other instead of along their timestamp/index')
 
     return parser.parse_args()
 

@@ -32,8 +32,9 @@ class DroneFlight:
     def __init__(self, altitude_m, altitude_range_m, cell_size_m, ue4_airsim_factor, robot_radius_m, sensors,
                  camera_info, sample_rates, clock_speed=1, min_flight_distance_m=30, max_flight_distance_m=200,
                  saved_vertices_filename='object_points', update_saved_vertices=False, plot2D=False, plot3D=True,
-                 controller_tuning_switch=False, data_gather_types=None, plotting_controller_signals=False,
-                 vehicle_name='', vehicle_start_position=None, smooth=True, failure_types=None, activate_take_off=True):
+                 controller_tuning_switch=False, data_gather_types=None, plotting_controller_signals_aeo=None,
+                 plotting_controller_signals=False,vehicle_name='', vehicle_start_position=None, smooth=True,
+                 failure_types=None, activate_take_off=True):
         if vehicle_start_position is None:
             vehicle_start_position = (0, 0, 0)
         self.altitude_m = -altitude_m
@@ -85,9 +86,11 @@ class DroneFlight:
         # Controller tuning
         self.controller_tuning_switch = controller_tuning_switch
         self.data_gather_types = data_gather_types
+        self.plotting_controller_signals_aeo = plotting_controller_signals_aeo
         self.plotting_controller_signals = plotting_controller_signals
         self.controller_tuning = ControllerTuning(self.client, self.controller_tuning_switch, self.data_gather_types,
-                                                  self.plotting_controller_signals, vehicle_name=self.vehicle_name)
+                                                  self.plotting_controller_signals_aeo, self.plotting_controller_signals,
+                                                  vehicle_name=self.vehicle_name)
 
     def distances_to_ue4(self, distances, altitude_flags):
         """
@@ -387,8 +390,8 @@ class DroneFlight:
         ic("flying on path...")
         # self.client.moveOnPathAsync(self.path, 12, 120, airsim.DrivetrainType.ForwardOnly,
         #                             airsim.YawMode(False, 0), 20, 1)
-        self.client.moveOnPathAsync(self.path, 1, 120, airsim.DrivetrainType.ForwardOnly,
-                                    airsim.YawMode(False, 0), 2, 0, vehicle_name=self.vehicle_name)
+        self.client.moveOnPathAsync(self.path, 1, 10000, airsim.DrivetrainType.ForwardOnly,
+                                    airsim.YawMode(False, 0), 2, 1, vehicle_name=self.vehicle_name)
 
     def check_goal_arrival(self, failed):
         """
