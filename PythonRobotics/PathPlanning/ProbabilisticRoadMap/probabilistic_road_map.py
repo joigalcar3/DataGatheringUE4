@@ -43,7 +43,7 @@ def prm_planning(sx, sy, gx, gy, ox, oy, rr, animation):
     sample_x, sample_y = sample_points(sx, sy, gx, gy,
                                        rr, ox, oy, obstacle_kd_tree)
     if animation:
-        plt.plot(sample_x, sample_y, ".b")
+        plt.plot(sample_y, sample_x, ".b")
 
     road_map = generate_road_map(sample_x, sample_y, rr, obstacle_kd_tree)
 
@@ -157,7 +157,7 @@ def dijkstra_planning(sx, sy, gx, gy, road_map, sample_x, sample_y, animation):
             plt.gcf().canvas.mpl_connect(
                 'key_release_event',
                 lambda event: [exit(0) if event.key == 'escape' else None])
-            plt.plot(current.x, current.y, "xg")
+            plt.plot(current.y, current.x, "xg")
             plt.pause(0.001)
 
         if c_id == (len(road_map) - 1):

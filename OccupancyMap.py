@@ -98,14 +98,17 @@ class OccupancyMap:
         filtered_points = {}
         h_max = h + delta_h
         h_min = max(h - delta_h, 150)
+        counter_points = 0
         for name in object_names:
             points = space_points[name]
+            counter_points += len(points)
             point_filtered = points[(points[:, -1] <= h_max) &
                                     (points[:, -1] >= h_min)]   # Filter the points found within the range
             pf_projected = point_filtered[:, :-1]   # Remove the altitude component
             if pf_projected.size and name != 'externalcamera':   # Only considered objects which have points in the point cloud slice
                 filtered_points[name] = pf_projected  # Object filtered points
         self.filtered_points = filtered_points
+        ic("Total number of 3D points: " + str(counter_points))
         return self.filtered_points
 
     def collect_all_points(self):
@@ -257,9 +260,11 @@ class OccupancyMap:
         object_names = self.filtered_points.keys()
         total_number_points = 0
         for name in object_names:
-            plt.scatter(self.filtered_points[name][:, 0], self.filtered_points[name][:, 1])
+            plt.scatter(self.filtered_points[name][:, 1], self.filtered_points[name][:, 0], s=10)
             total_number_points += self.filtered_points[name][:, 0].shape[0]
         ic("Total number of points: " + str(total_number_points))
+        plt.xlabel("Y-coordinate")
+        plt.ylabel("X-coordinate")
         plt.grid(True)
         plt.show()
 

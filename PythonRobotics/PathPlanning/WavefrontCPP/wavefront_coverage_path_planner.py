@@ -13,12 +13,14 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import ndimage
+import math
+from scipy.spatial import cKDTree
 
 do_animation = True
 
 
 def transform(
-        grid_map, src, distance_type='chessboard',
+        grid_map, src, rr, distance_type='chessboard',
         transform_type='path', alpha=0.01
 ):
     """transform
@@ -26,12 +28,17 @@ def transform(
     calculating transform of transform_type from src
     in given distance_type
 
+    :param rr: robot radius
     :param grid_map: 2d binary map
     :param src: distance transform source
     :param distance_type: type of distance used
     :param transform_type: type of transform used
     :param alpha: weight of Obstacle Transform used when using path_transform
     """
+    # Obstacle coordinates
+    ox = np.where(grid_map == True)[0].tolist()
+    oy = np.where(grid_map == True)[1].tolist()
+    obstacle_tree = cKDTree(np.vstack((ox, oy)).T)
 
     n_rows, n_cols = grid_map.shape
 
@@ -42,8 +49,9 @@ def transform(
                  [0, -1], [-1, -1], [-1, 0], [-1, 1]]
     if distance_type == 'chessboard':
         cost = [1, 1, 1, 1, 1, 1, 1, 1]
-    elif distance_type == 'eculidean':
+    elif distance_type == 'euclidean':
         cost = [1, np.sqrt(2), 1, np.sqrt(2), 1, np.sqrt(2), 1, np.sqrt(2)]
+        distance_type = np.reshape(np.array([np.sqrt(2), 1, np.sqrt(2), 1, 0, 1, np.sqrt(2), 1, np.sqrt(2)]), (3, 3))
     else:
         sys.exit('Unsupported distance type.')
 
@@ -59,8 +67,10 @@ def transform(
     # set obstacle transform_matrix value to infinity
     for i in range(n_rows):
         for j in range(n_cols):
-            if grid_map[i][j] == 1.0:
-                transform_matrix[i][j] = float('inf')
+            # if grid_map[i][j] == 1.0:
+            #     transform_matrix[i][j] = float('inf')
+            if is_collision(i, j, rr, obstacle_tree):
+                grid_map[i][j] = True
     is_visited = np.zeros_like(transform_matrix, dtype=bool)
     is_visited[src[0], src[1]] = True
     traversal_queue = [src]
@@ -77,7 +87,6 @@ def transform(
             nj = j + inc[1]
             if is_valid_neighbor(ni, nj):
                 is_visited[i][j] = True
-
                 # update transform_matrix
                 transform_matrix[i][j] = min(
                     transform_matrix[i][j],
@@ -89,6 +98,14 @@ def transform(
                     calculated.append((ni - 1) * n_cols + nj)
 
     return transform_matrix
+
+
+def is_collision(gx, gy, rr, obstacle_kd_tree):
+    # goal point check
+    dist, _ = obstacle_kd_tree.query([gx, gy])
+    if dist <= rr:
+        return True  # collision
+    return False  # OK
 
 
 def get_search_order_increment(start, goal):
@@ -141,7 +158,7 @@ def wavefront(transform_matrix, start, goal):
         path.append((i, j))
         is_visited[i][j] = True
 
-        max_T = float('-inf')
+        max_T = float('inf')
         i_max = (-1, -1)
         i_last = 0
         for i_last in range(len(path)):
@@ -149,7 +166,7 @@ def wavefront(transform_matrix, start, goal):
             for ci, cj in inc_order:
                 ni, nj = current_node[0] + ci, current_node[1] + cj
                 if is_valid_neighbor(ni, nj) and \
-                        transform_matrix[ni][nj] > max_T:
+                        transform_matrix[ni][nj] < max_T:
                     i_max = (ni, nj)
                     max_T = transform_matrix[ni][nj]
 
@@ -173,10 +190,10 @@ def visualize_path(grid_map, start, goal, path):  # pragma: no cover
     px, py = np.transpose(np.flipud(np.fliplr(path)))
 
     if not do_animation:
-        plt.imshow(grid_map, cmap='Greys')
-        plt.plot(ox, oy, "-xy")
-        plt.plot(px, py, "-r")
-        plt.plot(gx, gy, "-pg")
+        plt.imshow(grid_map, cmap='Greys', origin='lower')
+        plt.plot(oy, ox, "-xy")
+        plt.plot(py, px, "-r")
+        plt.plot(gy, gx, "-pg")
         plt.show()
     else:
         for ipx, ipy in zip(px, py):
@@ -185,7 +202,7 @@ def visualize_path(grid_map, start, goal, path):  # pragma: no cover
             plt.gcf().canvas.mpl_connect(
                 'key_release_event',
                 lambda event: [exit(0) if event.key == 'escape' else None])
-            plt.imshow(grid_map, cmap='Greys')
+            plt.imshow(grid_map, cmap='Greys', origin='lower')
             plt.plot(ox, oy, "-xb")
             plt.plot(px, py, "-r")
             plt.plot(gx, gy, "-pg")

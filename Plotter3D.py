@@ -36,7 +36,7 @@ class Plotter3D(pv.Plotter):
     def plot_point_cloud(self, points, img=None, color='b', size=3.0):
         # Add third dimension if non-existent
         if len(points.shape) != 3:
-            z_points = np.ones((points.shape[0], 1))
+            z_points = np.ones((points.shape[0], 1)) * -2
             points = np.hstack((points, z_points))
 
         # Remove NaN points.
@@ -95,7 +95,7 @@ class Plotter3D(pv.Plotter):
                          scale='auto')
         return self.add_mesh(arrow, color=color, opacity=opacity)
 
-    def plot_trajectory(self, path, color='green', step=1, height=1):
+    def plot_trajectory(self, path, color='green', step=1, height=-1):
         cell_size = self.occupancy_grid.cell_size
         x_min = self.occupancy_grid.limit_x_min
         y_min = self.occupancy_grid.limit_y_min

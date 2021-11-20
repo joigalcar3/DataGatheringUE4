@@ -7,7 +7,7 @@ from Occupancy_grid.user_input import load_user_input
 if __name__ == "__main__":
     args = load_user_input()
     save_images = True
-    store_location = "C:\\Users\jialv\OneDrive\\2020-2021\Thesis project\\3_Execution_phase\Simulator_images\INDI_tuning\\1.1\\C_Matlab_comparison\\Static\\C++\\dummy"
+    store_location = "C:\\Users\jialv\OneDrive\\2020-2021\Thesis project\\3_Execution_phase\Simulator_images\INDI_tuning\\1.1\\C_Matlab_comparison\\Static\\Temp"
     data_gather_types = args.data_gather_types
     plotting_controller_signals = args.plotting_controller_signals
     plotting_controller_signals_aeo = args.plotting_controller_signals_aeo

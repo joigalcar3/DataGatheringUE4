@@ -7,6 +7,7 @@ import random
 from datetime import datetime
 import keyboard
 from icecream import ic
+import time
 import matplotlib.pyplot as plt
 import scipy.integrate as integrate
 
@@ -228,19 +229,36 @@ class DroneFlight:
 
         # Compute the path with the chosen navigation type
         nav = GridNavigation(self.env_map, self.plot2D, self.plot3D)
+        start_time_nav = time.time()
         if navigation_type == "A_star":
+            start_time_nav = time.time()
             path = nav.navigation_A_star(self.start_grid, self.goal_grid, self.robot_radius)
+            end_time_nav = time.time()
+            print(end_time_nav - start_time_nav)
         elif navigation_type == "wavefront":
-            path = nav.navigate_wavefront(self.start_grid, self.goal_grid)
+            start_time_nav = time.time()
+            path = nav.navigate_wavefront(self.start_grid, self.goal_grid, self.robot_radius)
+            end_time_nav = time.time()
+            print(end_time_nav - start_time_nav)
         elif navigation_type == "Voronoid":
+            start_time_nav = time.time()
             path = nav.navigate_Voronoid(self.start_grid, self.goal_grid, self.robot_radius)
+            end_time_nav = time.time()
+            print(end_time_nav - start_time_nav)
         elif navigation_type == "RRT_star":
+            start_time_nav = time.time()
             path = nav.navigation_RRT_star(self.start_grid, self.goal_grid)
+            end_time_nav = time.time()
+            print(end_time_nav - start_time_nav)
         elif navigation_type == "PRM":
+            start_time_nav = time.time()
             path = nav.navigation_PRM(self.start_grid, self.goal_grid, self.robot_radius)
+            end_time_nav = time.time()
+            print(end_time_nav - start_time_nav)
         else:
             raise ValueError("Navigation type does not exist.")
-
+        end_time_nav = time.time()
+        ic(end_time_nav - start_time_nav)
         # Smoothen the path
         if self.smooth:
             path_or = path.copy()
@@ -251,8 +269,8 @@ class DroneFlight:
             while not success and reduction <= 1:
                 try:
                     path, collision = nav.smooth_B_spline(path_or, reduction=reduction)
-                    if not collision:
-                        path, collision = nav.smooth_cubic_spline(path)
+                    # if not collision:
+                    #     path, collision = nav.smooth_cubic_spline(path)
                     success = not collision
                 except:
                     success = False
@@ -415,6 +433,7 @@ class DroneFlight:
         if failed:
             collision_info = self.client.simGetCollisionInfo(vehicle_name=self.vehicle_name)
             z_val = -self.client.getMultirotorState(vehicle_name=self.vehicle_name).kinematics_estimated.position.z_val
+            current_time = self.client.getMultirotorState(vehicle_name=self.vehicle_name).timestamp/1e9
             collided = collision_info.has_collided
             ic(collided)
             if collided:
@@ -438,6 +457,10 @@ class DroneFlight:
                 message = "Collision ground"
                 ic(message)
                 return 0, distance, 2
+            elif current_time-self.failure_factory.failure_timestamp >= 2:
+                message = '2 seconds passed since failure'
+                ic(message)
+                return 0, distance, 4
 
         # Check whether the distance is less than 2 metres
         if distance < 2:
@@ -455,7 +478,8 @@ class DroneFlight:
         # Starting to store the data from the sensors and for tuning the controller
         self.sensors.start_signal_sensors_data_storage()
         self.controller_tuning.initialize_data_gathering()
-        failed = int(self.controller_tuning_switch)
+        # failed = int(self.controller_tuning_switch)
+        failed = 0
 
         not_arrived = 1
         self.collision_type = 0
@@ -474,8 +498,8 @@ class DroneFlight:
             # Obtain the distance to destination
             not_arrived, distance, self.collision_type = self.check_goal_arrival(failed)
             # When tuning the controller, executing failures is not required
-            if not self.controller_tuning_switch:
-                failed = self.failure_factory.execute_failures(distance)
+            # if not self.controller_tuning_switch:
+            failed = self.failure_factory.execute_failures(distance)
 
             # Manual break in the collection of data
             if keyboard.is_pressed('K'):

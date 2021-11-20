@@ -99,7 +99,7 @@ def load_user_input():
                         help='Method employed for navigation: A_star, wavefront, Voronoid, RRT_star and PRM')
 
     # Arguments related to the failure factory
-    parser.add_argument('--failure_types', default=[],  #'prop_fly_off_dis_abr', 'actuator_saturation_dis_abr'
+    parser.add_argument('--failure_types', default=['prop_fly_off_dis_abr'],  #'prop_fly_off_dis_abr', 'actuator_saturation_dis_abr'
                         help="Failures types considered during the flight. Options listed in the Failure Factory. It"
                              "needs to be followed by dis or con (or mix), which tells the factory the number of "
                              "options considered for failure and abr or lin, which tells the factory the time component"
@@ -115,7 +115,7 @@ def load_user_input():
 
     # Arguments for debugging purposes
     parser.add_argument('--plot2D', type=bool, default=False, help='Whether the 2D plots should be shown.')
-    parser.add_argument('--plot3D', type=bool, default=True, help='Whether the 3D plots should be shown.')
+    parser.add_argument('--plot3D', type=bool, default=False, help='Whether the 3D plots should be shown.')
 
     # Arguments for controller tuning
     parser.add_argument('--controller_tuning_switch', type=bool, default=True,
@@ -131,6 +131,9 @@ def load_user_input():
                                                                   ['position.positions_z', 'posref.pos_ref_z'],
                                                                   ['orientation.orientation_z',
                                                                    'yawref.yaw_ref_corrected'],
+                                                                  ['orientation.orientation_x',
+                                                                   'orientation.orientation_y',
+                                                                   'orientation.orientation_z'],
                                                                   ['yawref.yaw_ref', 'yawref.yaw_ref_corrected'],
                                                                   ['velref.vel_ref_x', 'vel.vel_x'],
                                                                   ['velref.vel_ref_y', 'vel.vel_y'],

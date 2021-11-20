@@ -67,7 +67,7 @@ class DijkstraSearch:
             # show graph
             if self.show_animation and len(
                     close_set.keys()) % 2 == 0:  # pragma: no cover
-                plt.plot(current_node.x, current_node.y, "xg")
+                plt.plot(current_node.y, current_node.x, "xg")
                 # for stopping simulation with the esc key.
                 plt.gcf().canvas.mpl_connect(
                     'key_release_event',
@@ -136,5 +136,5 @@ class DijkstraSearch:
     @staticmethod
     def is_same_node(node_a, node_b):
         dist = np.hypot(node_a.x - node_b.x,
-                        node_b.y - node_b.y)
+                        node_a.y - node_b.y)
         return dist <= 0.1

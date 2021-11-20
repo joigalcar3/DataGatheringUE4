@@ -23,13 +23,15 @@ show_animation = True
 
 class InformedRRTStar:
     def __init__(self, start, goal,
-                 obstacleList, randArea, only_integer=True,
+                 obstacleList, randArea_x, randArea_y, only_integer=True,
                  expandDis=5, goalSampleRate=10, maxIter=30):
 
         self.start = Node(start[0], start[1])
         self.goal = Node(goal[0], goal[1])
-        self.min_rand = randArea[0]
-        self.max_rand = randArea[1]
+        self.min_rand_x = randArea_x[0]
+        self.max_rand_x = randArea_x[1]
+        self.min_rand_y = randArea_y[0]
+        self.max_rand_y = randArea_y[1]
         self.only_integers = only_integer
         self.expand_dis = expandDis
         self.goal_sample_rate = goalSampleRate
@@ -93,12 +95,15 @@ class InformedRRTStar:
                         lastIndex = len(self.node_list) - 1
                         tempPath = self.get_final_course(lastIndex)
                         tempPathLen = self.get_path_len(tempPath)
-                        if tempPathLen < cBest:
-                            path = tempPath
-                            cBest = tempPathLen
-                            if i - finish_heuristic > self.max_iter/5:
-                                break
-                            finish_heuristic = i
+                        path = tempPath
+                        cBest = tempPathLen
+                        break
+                        # if tempPathLen < cBest:
+                        #     path = tempPath
+                        #     cBest = tempPathLen
+                        #     if i - finish_heuristic > self.max_iter/5:
+                        #         break
+                        #     finish_heuristic = i
             if animation:
                 self.draw_graph(xCenter=xCenter,
                                 cBest=cBest, cMin=cMin,
@@ -170,8 +175,8 @@ class InformedRRTStar:
 
     def sample_free_space(self):
         if random.randint(0, 100) > self.goal_sample_rate:
-            rnd = [random.uniform(self.min_rand, self.max_rand),
-                   random.uniform(self.min_rand, self.max_rand)]
+            rnd = [random.uniform(self.min_rand_x, self.max_rand_x),
+                   random.uniform(self.min_rand_y, self.max_rand_y)]
         else:
             rnd = [self.goal.x, self.goal.y]
 
@@ -260,7 +265,7 @@ class InformedRRTStar:
                 np.array([x1, y1]),
                 np.array([x2, y2]),
                 np.array([ox, oy]))
-            if dd <= size ** 2:
+            if dd <= size ** 2 or x2 > self.max_rand_x or y2 > self.max_rand_y or x2 < 0 or y2 < 0:
                 return False  # collision
         return True
 
@@ -288,21 +293,21 @@ class InformedRRTStar:
             lambda event: [exit(0) if event.key == 'escape' else None])
         if rnd is not None:
             plt.plot(rnd[0], rnd[1], "^k")
-            if cBest != float('inf'):
+            if cBest != float('inf') and False:
                 self.plot_ellipse(xCenter, cBest, cMin, e_theta)
 
         for node in self.node_list:
             if node.parent is not None:
                 if node.x or node.y is not None:
-                    plt.plot([node.x, self.node_list[node.parent].x], [
-                        node.y, self.node_list[node.parent].y], "-g")
+                    plt.plot([node.y, self.node_list[node.parent].y], [
+                        node.x, self.node_list[node.parent].x], "-g")
 
         for (ox, oy, size) in self.obstacle_list:
-            plt.plot(ox, oy, "ok", ms=30 * size)
+            plt.plot(oy, ox, "ok", ms=size)
 
-        plt.plot(self.start.x, self.start.y, "xr")
-        plt.plot(self.goal.x, self.goal.y, "xr")
-        plt.axis([self.min_rand, self.max_rand, self.min_rand, self.max_rand])
+        plt.plot(self.start.y, self.start.x, "xr")
+        plt.plot(self.goal.y, self.goal.x, "xr")
+        plt.axis([self.min_rand_y, self.max_rand_y, self.min_rand_x, self.max_rand_x])
         plt.grid(True)
         plt.pause(0.01)
 

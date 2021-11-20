@@ -54,6 +54,7 @@ class DroneSensors:
         name_func = 'get' + sensor_type.capitalize() + 'StoredDataVec'
         output = getattr(self.client, name_func)(vehicle_name=self.vehicle_name)
         header_names = list(output.keys())
+
         # Puts the names of all the variables together in a single string to start the Excel used for data storage
         headers_str = transform_list_to_string(header_names)
         self.headers[sensor_type] = headers_str

@@ -73,6 +73,7 @@ class FailureFactory:
 
         self.start_timestamp = None       # Timestamp at which the iteration is started
         self.end_timestamp = None         # Timestamp at which the iteration is concluded
+        self.failure_timestamp = None
 
     def initialise_failure_file(self):
         """
@@ -143,6 +144,7 @@ class FailureFactory:
         """
         if self.chosen_mode != 1 and distance <= self.injection_distance:
             self.chosen_failure.activate_failure()
+            self.failure_timestamp = self.client.getMultirotorState(vehicle_name=self.vehicle_name).timestamp/1e9
             return 1
         return 0
 

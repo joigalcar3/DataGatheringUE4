@@ -15,19 +15,21 @@ from scipy.spatial import cKDTree, Voronoi
 
 class VoronoiRoadMapPlanner:
 
-    def __init__(self, only_integers=True, show_animation=True, N_KNN=10, MAX_EDGE_LEN=30):
+    def __init__(self, x_limit, y_limit, only_integers=True, show_animation=True, N_KNN=10, MAX_EDGE_LEN=30):
         # parameter
         self.N_KNN = N_KNN  # number of edge from one sampled point
         self.MAX_EDGE_LEN = MAX_EDGE_LEN # [m] Maximum edge length
         self.only_integers = only_integers
         self.show_animation = show_animation
+        self.x_limit = x_limit
+        self.y_limit = y_limit
 
     def planning(self, sx, sy, gx, gy, ox, oy, robot_radius):
         obstacle_tree = cKDTree(np.vstack((ox, oy)).T)
 
         sample_x, sample_y = self.voronoi_sampling(sx, sy, gx, gy, ox, oy, self.only_integers)
         if self.show_animation:  # pragma: no cover
-            plt.plot(sample_x, sample_y, ".b")
+            plt.plot(sample_y, sample_x, ".b")
 
         road_map_info = self.generate_road_map_info(
             sample_x, sample_y, robot_radius, obstacle_tree)
@@ -111,18 +113,30 @@ class VoronoiRoadMapPlanner:
                 plt.plot([sample_x[i], sample_x[ind]],
                          [sample_y[i], sample_y[ind]], "-k")
 
-    @staticmethod
-    def voronoi_sampling(sx, sy, gx, gy, ox, oy, only_integers):
+    def voronoi_sampling(self, sx, sy, gx, gy, ox, oy, only_integers):
         oxy = np.vstack((ox, oy)).T
 
         # generate voronoi point
         vor = Voronoi(oxy)
+        sample_x = []
+        sample_y = []
         if only_integers:
-            sample_x = [int(ix) for [ix, _] in vor.vertices]
-            sample_y = [int(iy) for [_, iy] in vor.vertices]
+            for [ix, iy] in vor.vertices:
+                if not any(np.equal(oxy, [int(ix), int(iy)]).all(1)) and (0 <= int(ix) <= self.x_limit) and\
+                        (0 <= int(iy) <= self.y_limit):
+                    sample_x.append(int(ix))
+                    sample_y.append(int(iy))
+
+            # sample_x = [int(ix) for [ix, _] in vor.vertices]
+            # sample_y = [int(iy) for [_, iy] in vor.vertices]
         else:
-            sample_x = [ix for [ix, _] in vor.vertices]
-            sample_y = [iy for [_, iy] in vor.vertices]
+            for [ix, iy] in vor.vertices:
+                if not any(np.equal(oxy, [ix, iy]).all(1)):
+                    sample_x.append(ix)
+                    sample_y.append(iy)
+
+            # sample_x = [ix for [ix, _] in vor.vertices]
+            # sample_y = [iy for [_, iy] in vor.vertices]
 
         sample_x.append(sx)
         sample_y.append(sy)

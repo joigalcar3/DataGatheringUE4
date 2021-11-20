@@ -1,5 +1,6 @@
 from OccupancyMap import OccupancyMap
-from PythonRobotics.PathPlanning.WavefrontCPP.wavefront_coverage_path_planner import wavefront
+from PythonRobotics.PathPlanning.WavefrontCPP.wavefront_coverage_path_planner import wavefront, transform, \
+    visualize_path
 from PythonRobotics.PathPlanning.VoronoiRoadMap.voronoi_road_map import VoronoiRoadMapPlanner
 from PythonRobotics.PathPlanning.InformedRRTStar.informed_rrt_star import InformedRRTStar
 from PythonRobotics.PathPlanning.AStar.a_star import AStarPlanner
@@ -20,33 +21,43 @@ class GridNavigation:
 
     def __init__(self, om: OccupancyMap, plotter_2D=True, plotter_3D=True):
         self.om = om
-        self.grid = om.grid
+        self.grid = om.grid.copy()
         self.plotter_2D = plotter_2D
         self.plotter_3D = plotter_3D
 
-    def navigate_wavefront(self, start, goal):
+    def navigate_wavefront(self, start, goal, robot_radius):
         """
         Wavefront navigation as explained in https://pythonrobotics.readthedocs.io/en/latest/
+        :param robot_radius: radius of the drone. Used to determine whether an obstacle is hit during flight
         :param start: start location
         :param goal: target location
         :return path: path of points in grid coordinates that the drone must follow
         """
         grid_wavefront = self.grid.astype('float')
-        for row in range(grid_wavefront.shape[0]):
-            number = row
-            for column in range(grid_wavefront.shape[1]):
-                if isclose(grid_wavefront[row, column], 0, abs_tol=1e-6):
-                    grid_wavefront[row, column] = number
-                    number += 1
-                else:
-                    grid_wavefront[row, column] = float('inf')
-        path = wavefront(grid_wavefront, start, goal)
+        PT = transform(grid_wavefront, goal, robot_radius, transform_type='path', distance_type='euclidean', alpha=0.01)
+        PT_path = wavefront(PT, start, goal)
+        # DT = transform(potato, goal, transform_type='distance')
+        # DT_path = wavefront(DT, start, goal)
+
+        # for row in range(grid_wavefront.shape[0]):
+        #     number = row
+        #     for column in range(grid_wavefront.shape[1]):
+        #         if isclose(grid_wavefront[row, column], 0, abs_tol=1e-6):
+        #             grid_wavefront[row, column] = number
+        #             number += 1
+        #         else:
+        #             grid_wavefront[row, column] = float('inf')
+        # path = wavefront(grid_wavefront, start, goal)
+
+        if self.plotter_2D:
+            visualize_path(self.grid.astype('float'), start, goal, PT_path)
+            plt.imshow(PT, cmap='cool', interpolation='nearest', origin='lower')
 
         if self.plotter_3D:
-            self.om.plot_trajectory_3d_grid(path)
+            self.om.plot_trajectory_3d_grid(PT_path)
 
         print('Wavefront path has been computed')
-        return path
+        return PT_path
 
     def navigate_Voronoid(self, start, goal, robot_size=1):
         """
@@ -67,17 +78,18 @@ class GridNavigation:
         ox = np.where(self.grid == True)[0].tolist()
         oy = np.where(self.grid == True)[1].tolist()
 
-        rx, ry = VoronoiRoadMapPlanner(only_integers=True, show_animation=self.plotter_2D).planning(sx, sy, gx, gy, ox,
-                                                                                                    oy, robot_size)
+        rx, ry = VoronoiRoadMapPlanner(max(ox), max(oy), only_integers=True, show_animation=self.plotter_2D).planning(
+            sx, sy, gx, gy, ox,
+            oy, robot_size)
         path = [(i, j) for i, j in zip(rx, ry)]
 
         if self.plotter_2D:
-            plt.plot(ox, oy, ".k")
-            plt.plot(sx, sy, "^r")
-            plt.plot(gx, gy, "^c")
+            plt.plot(oy, ox, ".k")
+            plt.plot(sy, sx, "^r")
+            plt.plot(gy, gx, "^c")
             plt.grid(True)
             plt.axis("equal")
-            plt.plot(rx, ry, "-r")
+            plt.plot(ry, rx, "-r")
             plt.pause(0.1)
             plt.show()
 
@@ -101,22 +113,25 @@ class GridNavigation:
         oy = np.where(self.grid == True)[1].tolist()
 
         # Create obstacle grid which includes the size of the obstacle as a 3rd tuple component
-        obstacleList = [(i, j, 1) for i, j in zip(ox, oy)]
+        obstacleList = [(i, j, 3) for i, j in zip(ox, oy)]
 
         # Obtain max distance as the maximum distance that will be inspected by the navigation algorithm
-        max_distance = np.max(self.grid.shape)
+        # max_distance = np.max(self.grid.shape)
+        max_distance_x = self.grid.shape[0]
+        max_distance_y = self.grid.shape[1]
 
         # Set params
         rrt = InformedRRTStar(start=list(goal), goal=list(start),
-                              randArea=[0, max_distance], obstacleList=obstacleList, only_integer=True,
-                              expandDis=5, maxIter=30)
-        path = rrt.informed_rrt_star_search(animation=self.plotter_2D)
+                              randArea_x=[0, max_distance_x], randArea_y=[0, max_distance_y], obstacleList=obstacleList,
+                              only_integer=True,
+                              expandDis=10, maxIter=400)
+        path = rrt.informed_rrt_star_search(animation=False)
         print("Done!!")
 
         # Plot path
         if self.plotter_2D:
             rrt.draw_graph()
-            plt.plot([x for (x, y) in path], [y for (x, y) in path], '-r')
+            plt.plot([y for (x, y) in path], [x for (x, y) in path], '-r')
             plt.grid(True)
             plt.pause(0.01)
             plt.show()
@@ -157,12 +172,12 @@ class GridNavigation:
         if self.plotter_2D:
             ox = np.where(self.grid == True)[0].tolist()
             oy = np.where(self.grid == True)[1].tolist()
-            plt.plot(ox, oy, ".k")
-            plt.plot(sx, sy, "og")
-            plt.plot(gx, gy, "xb")
+            plt.plot(oy, ox, ".k")
+            plt.plot(sy, sx, "og")
+            plt.plot(gy, gx, "xb")
             plt.grid(True)
             plt.axis("equal")
-            plt.plot(rx, ry, "-r")
+            plt.plot(ry, rx, "-r")
             plt.pause(0.001)
             plt.show()
 
@@ -334,12 +349,12 @@ class GridNavigation:
         path.reverse()
 
         if self.plotter_2D:
-            plt.plot(ox, oy, ".k")
-            plt.plot(sx, sy, "^r")
-            plt.plot(gx, gy, "^c")
+            plt.plot(oy, ox, ".k")
+            plt.plot(sy, sx, "^r")
+            plt.plot(gy, gx, "^c")
             plt.grid(True)
             plt.axis("equal")
-            plt.plot(rx, ry, "-r")
+            plt.plot(ry, rx, "-r")
             plt.pause(0.001)
             plt.show()
 
