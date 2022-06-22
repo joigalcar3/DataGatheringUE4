@@ -51,7 +51,7 @@ class DataGathering:
         Prepares and launches the required flights according to the number of runs specified.
         :return:
         """
-        self.drone_flight.reset(True)
+        self.drone_flight.reset(False)
         for run in range(self.number_runs):
             _ = self.drone_flight.run(navigation_type=self.navigation_type, start_point=self.args.start,
                                       goal_point=self.args.goal, min_h=self.flight_altitudes[0],
@@ -124,6 +124,7 @@ if __name__ == "__main__":
     import json
 
     args = load_user_input()
+
     # Debugging with icecream
     gettrace = getattr(sys, 'gettrace', None)
     if gettrace() and not args.PSO_tuning_switch:

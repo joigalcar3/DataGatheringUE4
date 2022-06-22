@@ -36,6 +36,7 @@ class ControllerTuning:
             for i in range(len(self.data_gather_types)):
                 name_func = 'set' + self.data_gather_types[i].capitalize() + 'Activation'
                 getattr(self.client, name_func)(True, vehicle_name=self.vehicle_name)
+            self.client.setPlotDataCollectionActivation(True)
 
     def collect_data_gathered(self):
         """
@@ -43,6 +44,7 @@ class ControllerTuning:
         :return:
         """
         if self.controller_tuning_switch:
+            self.client.setPlotDataCollectionActivation(False)
             for i in range(len(self.data_gather_types)):
                 name_func = 'get' + self.data_gather_types[i].capitalize() + 'StoredDataVec'
                 output = getattr(self.client, name_func)(vehicle_name=self.vehicle_name)

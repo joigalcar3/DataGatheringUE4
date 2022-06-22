@@ -5,8 +5,9 @@ from PropDamage import PropDamage
 
 class PropFlyOff(PropDamage):
     """
-    Class which defines the parameters corresponding to actuator saturating or locking at it maximum thrust mode.
-    Since there are 4 propellers and each propeller can only fail with maximum thrust, there are 4 failure modes.
+    Class which defines the parameters corresponding to the propeller flying off.
+    Since there are 4 propellers and each propeller can only fail with the propeller flying off,
+    there are 4 failure modes.
     """
     failure_options = {"dis": 4, "con": 4}  # Define number of modes depending on whether continuous or discrete.
     name = "prop_fly_off"  # Name of the current failure type
@@ -24,6 +25,13 @@ class PropFlyOff(PropDamage):
         self.propeller = self.mode - 1
         self.thrust_coefficient_final = 0
         self.magnitude_final = self.thrust_coefficient_final
+
+    def reset(self, vehicle_name=""):
+        """
+        Method which resets the injected failure
+        :return:
+        """
+        self.client.setDamageCoefficients(vehicle_name=vehicle_name)
 
 
 if __name__ == "__main__":

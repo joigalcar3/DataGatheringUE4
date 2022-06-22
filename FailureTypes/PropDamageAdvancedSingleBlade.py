@@ -1,53 +1,49 @@
 import random
+import numpy as np
 from icecream import ic
 
 from ActuatorFailureBase import ActuatorFailureBase
 
 
-class PropDamage(ActuatorFailureBase):
+class PropDamageAdvancedSingleBlade(ActuatorFailureBase):
     """
     Class which defines the parameters corresponding to propeller damage. There are two modes: (dis) whether the
-    propeller attain one of the following thrust coefficients {0, 0.25, 0.5, 0.75} or (con) in which each of the
-    propellers can attain any thrust coefficient.
+    propeller attain one of the following combinations of damage coefficients {20, 40, 60, 80} and starting angles
+    {0, 90, 180, 270} or (con) in which each of the propellers can attain any value of damage coefficient and starting
+    value. For the present research, single propeller SINGLE BLADE failure is considered (hence the name of the class).
+    The damaged blade will always be the one pointing in the 0 degrees direction.
 
-    (Dis) Since there are 4 propellers and each propeller can have 4 failure modes, there are 16 failure modes. A thrust
+    (Dis) Since there are 4 propellers and each propeller can have 16 failure modes, there are 64 failure modes. A thrust
     coefficient with a value of 1 is not considered to be a failure mode since that is simply not a failure.
 
-    (Con) Class which defines a failure type in which each of the propellers can attain one of the following thrust
-    coefficients: {0, 0.25, 0.5, 0.75, 1}.
-    Since there are 4 propellers and each propeller can have 4 failure modes, there are 16 failure modes. A thrust
-    coefficient with a value of 1 is not considered to be a failure mode since that is simply not a failure.
+    (Con) Class which defines a failure type in which each of the propellers can attain any damage ceofficient and
+    any starting angle.
     """
-    failure_options = {"dis": 16, "con": 4}  # Define number of modes depending on whether continuous or discrete.
-    name = "prop_damage"  # Name of the current failure type
-    print_failure_args = ["Propeller Damage", 4]
+    failure_options = {"dis": 64, "con": 4}  # Define number of modes depending on whether continuous or discrete.
+    name = "prop_damage_advanced_single_blade"  # Name of the current failure type
+    print_failure_args = ["Advanced Propeller Damage Single Blade", 4]
 
     def __init__(self, continuous=False, time_modality=0, vehicle_name=''):
         super().__init__(continuous, time_modality, vehicle_name, "damage")
+        self.start_propeller_angle = None
+        self.blade = 0
 
     def abrupt_failure(self):
         """
         Method which defines the changes in the case that the failure is abrupt
         :return:
         """
-        self.damage_coeff[self.propeller] = self.thrust_coefficient_final
-        self.client.setDamageCoefficients(*self.damage_coeff, vehicle_name=self.vehicle_name)
+        self.client.setDamageCoefficientAdvanced(self.propeller, self.blade, self.thrust_coefficient_final * 100,
+                                                 self.start_propeller_angle, vehicle_name=self.vehicle_name)
+        self.client.setSwitchActivateBladeDamageAdvanced(True)
 
     def linear_failure(self):
         """
         Method which defines the changes in the case that the failure is linear
         :return:
         """
-        time_now = self.client.getMultirotorState(vehicle_name=self.vehicle_name).timestamp
-        time_passed = time_now - self.last_timestamp
-        gradient = time_passed / self.UE4_second * self.linear_slope
-
-        self.thrust_coefficient = max(self.thrust_coefficient + self.sign_gradient * gradient,
-                                      self.thrust_coefficient_final)
-        self.damage_coeff[self.propeller] = self.thrust_coefficient
-        self.client.setDamageCoefficients(*self.damage_coeff, vehicle_name=self.vehicle_name)
-        self.last_timestamp = time_now
-        ic(self.thrust_coefficient)
+        error_message = "There does not exist a linear failure implementation of {}".format(self.print_failure_args[0])
+        raise ValueError(error_message)
 
     def start_linear_failure(self):
         """
@@ -56,11 +52,8 @@ class PropDamage(ActuatorFailureBase):
         of the change, whether the lock coefficient needs to be increased or decreased.
         :return:
         """
-        self.last_timestamp = self.client.getMultirotorState(vehicle_name=self.vehicle_name).timestamp
-        self.linear_slope = round(random.randrange(self.min_time_modality, self.max_time_modality, 1) / 100, 2)
-        self.thrust_coefficient = 1
-        self.sign_gradient = -1
-        ic(self.linear_slope)
+        error_message = "There does not exist a linear failure implementation of {}".format(self.print_failure_args[0])
+        raise ValueError(error_message)
 
     def unlock_mode(self):
         """
@@ -80,10 +73,13 @@ class PropDamage(ActuatorFailureBase):
         """
         if self.continuous:
             self.propeller = (self.mode - 1)
-            self.thrust_coefficient_final = round(random.randrange(0, 101, self.step) / 100, 2)
+            self.thrust_coefficient_final = round(int(random.randrange(0, 101, self.step))/100.0, 2)
+            self.start_propeller_angle = np.radians(int(random.randrange(0, 360, self.step)))
         else:
-            self.propeller = (self.mode - 1) // 4
-            self.thrust_coefficient_final = (self.mode - 1) % 4 * 0.25
+            self.propeller = (self.mode - 1) // 16
+            self.thrust_coefficient_final = round((((self.mode - 1) - 16 * self.propeller) // 4 + 1) * 0.2, 2)
+            self.start_propeller_angle = (((self.mode - 1) - 16 * self.propeller) % 4) * np.radians(90)
+
         self.magnitude_final = self.thrust_coefficient_final
 
     def reset(self, vehicle_name=""):
@@ -91,7 +87,7 @@ class PropDamage(ActuatorFailureBase):
         Method which resets the injected failure
         :return:
         """
-        self.client.setDamageCoefficients(vehicle_name=vehicle_name)
+        self.client.resetDamageCoefficientAdvanced(vehicle_name=vehicle_name)
 
 
 if __name__ == "__main__":
@@ -109,7 +105,7 @@ if __name__ == "__main__":
     client.enableApiControl(True)
     client.takeoffAsync()
     time.sleep(2)
-    failure = PropDamage(True, 1)
+    failure = PropDamageAdvancedSingleBlade(True, 1)
     print(failure.mode_printer(client, 1))
     failure.activate_failure()
     for i in range(300):

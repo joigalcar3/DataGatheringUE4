@@ -25,6 +25,14 @@ class ActuatorSaturation(ActuatorLocked):
         self.lock_coefficient_final = 1
         self.magnitude_final = self.lock_coefficient_final
 
+    def reset(self, vehicle_name=""):
+        """
+        Method which resets the injected failure
+        :return:
+        """
+        self.client.setLockedPropellers(vehicle_name=vehicle_name)
+        self.client.setLockedPropellerCoefficients(vehicle_name=vehicle_name)
+
 
 if __name__ == "__main__":
     import airsim

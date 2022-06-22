@@ -231,30 +231,15 @@ class DroneFlight:
         nav = GridNavigation(self.env_map, self.plot2D, self.plot3D)
         start_time_nav = time.time()
         if navigation_type == "A_star":
-            start_time_nav = time.time()
             path = nav.navigation_A_star(self.start_grid, self.goal_grid, self.robot_radius)
-            end_time_nav = time.time()
-            print(end_time_nav - start_time_nav)
         elif navigation_type == "wavefront":
-            start_time_nav = time.time()
             path = nav.navigate_wavefront(self.start_grid, self.goal_grid, self.robot_radius)
-            end_time_nav = time.time()
-            print(end_time_nav - start_time_nav)
         elif navigation_type == "Voronoid":
-            start_time_nav = time.time()
             path = nav.navigate_Voronoid(self.start_grid, self.goal_grid, self.robot_radius)
-            end_time_nav = time.time()
-            print(end_time_nav - start_time_nav)
         elif navigation_type == "RRT_star":
-            start_time_nav = time.time()
             path = nav.navigation_RRT_star(self.start_grid, self.goal_grid)
-            end_time_nav = time.time()
-            print(end_time_nav - start_time_nav)
         elif navigation_type == "PRM":
-            start_time_nav = time.time()
             path = nav.navigation_PRM(self.start_grid, self.goal_grid, self.robot_radius)
-            end_time_nav = time.time()
-            print(end_time_nav - start_time_nav)
         else:
             raise ValueError("Navigation type does not exist.")
         end_time_nav = time.time()
@@ -269,8 +254,8 @@ class DroneFlight:
             while not success and reduction <= 1:
                 try:
                     path, collision = nav.smooth_B_spline(path_or, reduction=reduction)
-                    # if not collision:
-                    #     path, collision = nav.smooth_cubic_spline(path)
+                    if not collision:
+                        path, collision = nav.smooth_cubic_spline(path)
                     success = not collision
                 except:
                     success = False
@@ -298,7 +283,7 @@ class DroneFlight:
         heading_vector = [second_point[0]-start_point[0], second_point[1]-start_point[1]]
         self.heading_start = pi/2 - atan2(heading_vector[0], heading_vector[1])
         if self.heading_start > pi:
-            self.heading_start = 2*pi-self.heading_start
+            self.heading_start = -(2*pi-self.heading_start)
 
     def teleport_drone_start(self):
         """
@@ -328,9 +313,6 @@ class DroneFlight:
 
             # Set up the desired altitude and start hovering the drone in place
             pose.position.z_val = self.altitude_m
-            # self.client.moveToZAsync(self.altitude_m, 0.1, vehicle_name=self.vehicle_name, lookahead=0.6,
-            #                          adaptive_lookahead=1)
-            # time.sleep(0.5)
 
         # Set desired yaw angle once it has been teleported
         self.client.setTeleportYawRef(degrees(self.heading_start))
@@ -359,9 +341,11 @@ class DroneFlight:
         Method that checks that the drone has actually taken off. If not, an error is raised.
         :return:
         """
+        # Making sure that Api control has been enabled
         if not self.client.isApiControlEnabled(vehicle_name=self.vehicle_name):
             self.client.enableApiControl(True, vehicle_name=self.vehicle_name)
 
+        # Check if the drone has taken-off. If not, take-off, otherwise hover.
         state = self.client.getMultirotorState(vehicle_name=self.vehicle_name)
         if state.landed_state == airsim.LandedState.Landed:
             ic("taking off...")
@@ -374,9 +358,10 @@ class DroneFlight:
         time.sleep(2)
         ic("Done 2 seconds", self.vehicle_name)
 
+        # If not able to take-off, exit and report error
         state = self.client.getMultirotorState(vehicle_name=self.vehicle_name)
         if state.landed_state == airsim.LandedState.Landed:
-            ic("take off failed...", self.vehicle_name)
+            print("take off failed...", self.vehicle_name)
             sys.exit(1)
 
     def select_failure(self):
@@ -448,7 +433,7 @@ class DroneFlight:
                     ic(message)
                     return 0, distance, 1
             # Check whether the drone flies off into the sky
-            elif z_val > -3 * self.altitude_m:
+            elif z_val > -2 * self.altitude_m:
                 message = "Fly away"
                 ic(message)
                 return 0, distance, 3
@@ -457,7 +442,7 @@ class DroneFlight:
                 message = "Collision ground"
                 ic(message)
                 return 0, distance, 2
-            elif current_time-self.failure_factory.failure_timestamp >= 2:
+            elif current_time-self.failure_factory.failure_timestamp >= 0.5:
                 message = '2 seconds passed since failure'
                 ic(message)
                 return 0, distance, 4
@@ -506,11 +491,10 @@ class DroneFlight:
                 print('The letter K has been pressed.')
                 break
 
-            # When tuning the controller, the maximum flight time is limited --> 20 sec if clock speed is 4x
-            if self.controller_tuning_switch:
-                end_time = time.time()
-                if (end_time-start_time) > 160:
-                    not_arrived, distance, self.collision_type = [0, 100, 3]
+            # When tuning the controller (also when not tuning), the maximum flight time is limited --> 20 sec if clock speed is 4x
+            end_time = time.time()
+            if (end_time-start_time) > 20/self.clock_speed:
+                not_arrived, distance, self.collision_type = [0, 100, 5]
 
         # Once the drone has arrived to its destination, the sensor and failure data is stored in their respective files
         # When the controller is being tuned, failure and sensor information is not collected
@@ -524,8 +508,8 @@ class DroneFlight:
         client, as well as returning the damaged coefficients to one.
         :return:
         """
-        self.client.reset(reset_failures_airsim)
-        self.failure_factory.reset()
+        self.failure_factory.reset(reset_failures_airsim)
+        self.client.reset()
         self.sensors.restart_sensors()
         self.controller_tuning.reset()
 
@@ -574,6 +558,12 @@ class DroneFlight:
         total_error = self.controller_tuning.tuning_cost_function(self.collision_type, self.path)
         self.controller_tuning.scope_plotting_signals()
 
+        # self.controller_tuning.scope_plotting_signals(True,
+        #                                               "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Simulator_images\\Debugging\\Positive_zero_correct_V_and_float_and_filter")
+        # self.controller_tuning.scope_plotting_signals(True,
+        #                                               "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Simulator_images\\Debugging\\Positive_zero_correct_V")
+        # self.controller_tuning.scope_plotting_signals(True,
+        #                                               "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Simulator_images\\Debugging\\Negative_zero_correct_V_and_float_and_filter_and_posd")
         # Reset all the stored values from the flight
         if activate_reset:
             self.reset(True)
@@ -651,13 +641,13 @@ if __name__ == "__main__":
 
 
 # import os
-# times = [int(i[:-4]) for i in os.listdir("E:\Master_project\Simulator\AirSim_simulator\AirSim\PythonClient\multirotor\Occupancy_grid\Sensor_data\20210715-163858_1\front")[:-1]]
+# times = [int(i[:-4]) for i in os.listdir("D:\AirSim simulator\AirSim\PythonClient\multirotor\Occupancy_grid\Sensor_data\20210715-163858_1\front")[:-1]]
 # time_passed = [times[i+1] - times[i] for i in range(len(times)-1)]
 # [abs(time_passed[i+1] - time_passed[i]) for i in range(len(time_passed)-1)]
 #
 #
 # import os
-# times = [int(i[15:-4]) for i in os.listdir("E:\Master_project\Simulator\AirSim_simulator\AirSim\PythonClient\multirotor\Occupancy_grid\Sensor_data\Test\\2021-07-21-16-52-37\images")[:-1]]
+# times = [int(i[15:-4]) for i in os.listdir("D:\AirSim simulator\AirSim\PythonClient\multirotor\Occupancy_grid\Sensor_data\Test\\2021-07-21-16-52-37\images")[:-1]]
 # time_passed = [times[i+1] - times[i] for i in range(len(times)-1)]
 # [abs(time_passed[i+1] - time_passed[i]) for i in range(len(time_passed)-1)]
 

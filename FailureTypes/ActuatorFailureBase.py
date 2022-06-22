@@ -7,8 +7,9 @@ class ActuatorFailureBase(abc.ABC):
     """
     Base class that contains the general methods for actuator failures.
     """
-    UE4_second = 1e9  # Duration of one second in UE4
-    propeller_names = ["front_right", "back_left", "front_left", "back_right"]  # name of each propeller
+    UE4_second = 1e9  # Duration of one second in UE4            self.chosen_failure.activate_failure()
+
+    propeller_names = ["front_left", "front_right", "back_right", "back_left"]  # name of each propeller
     failure_time_mode_names = ["Abrupt", "Linear"]  # Name of the failure mode depending of its behaviour along time
     continuity_names = ["Discrete", "Continuous"]   # Name of the failure mode depending on the failure available coeffs
     step = 1
@@ -171,3 +172,11 @@ class ActuatorFailureBase(abc.ABC):
             error_message = "The chosen number of props ({}) does not exist for {}.".format(self.propeller, self.name)
             raise ValueError(error_message)
         return mode_text
+
+    @abc.abstractmethod
+    def reset(self, vehicle_name=""):
+        """
+        Method which resets the injected failure
+        :return:
+        """
+        pass

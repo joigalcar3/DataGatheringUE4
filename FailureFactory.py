@@ -3,6 +3,7 @@ import os
 import csv
 import time
 from PropFlyOff import PropFlyOff
+from PropDamageAdvancedSingleBlade import PropDamageAdvancedSingleBlade
 from PropDamage import PropDamage
 from ActuatorSaturation import ActuatorSaturation
 from ActuatorLocked import ActuatorLocked
@@ -29,6 +30,7 @@ class FailureFactory:
     failure_factory = {
         "prop_fly_off": PropFlyOff,
         "prop_damage": PropDamage,
+        "prop_damage_advanced_single_blade": PropDamageAdvancedSingleBlade,
         "actuator_saturation": ActuatorSaturation,
         "actuator_locked": ActuatorLocked
     }
@@ -37,8 +39,9 @@ class FailureFactory:
 
     # Information that the flight info file stores
     header = ['Iteration', "Sensor_folder", "Start_timestamp", "End_timestamp", "ClockSpeed", "Failure", "Failure_type",
-              "Failure_mode", "Failure_mode_local", "Failure_magnitude", "Magnitude_start", "Time_linear_slope",
-              "Continuity", "Time_modality", "Failure_timestamp", "Distance", "Percent_trip", "Collision_type"]
+              "Failure_mode", "Failure_mode_local", "Failure_magnitude", "Start_propeller_angle", "Blade",
+              "Magnitude_start", "Time_linear_slope", "Continuity", "Time_modality", "Failure_timestamp", "Distance",
+              "Percent_trip", "Collision_type"]
 
     def __init__(self, client, failure_types, clock_speed=1, vehicle_name=''):
         self.client = client
@@ -73,7 +76,7 @@ class FailureFactory:
 
         self.start_timestamp = None       # Timestamp at which the iteration is started
         self.end_timestamp = None         # Timestamp at which the iteration is concluded
-        self.failure_timestamp = None
+        self.failure_timestamp = None     # Timestamp at which the failure is executed
 
     def initialise_failure_file(self):
         """
@@ -142,7 +145,7 @@ class FailureFactory:
         :param distance:
         :return: None
         """
-        if self.chosen_mode != 1 and distance <= self.injection_distance:
+        if (self.chosen_mode != 1 and distance <= self.injection_distance) or self.failure_timestamp is not None:
             self.chosen_failure.activate_failure()
             self.failure_timestamp = self.client.getMultirotorState(vehicle_name=self.vehicle_name).timestamp/1e9
             return 1
@@ -185,6 +188,12 @@ class FailureFactory:
             row["Failure_mode"] = self.chosen_mode
             row["Failure_mode_local"] = self.local_failure_mode
             row["Failure_magnitude"] = self.chosen_failure.magnitude_final
+            if self.chosen_failure.name == 'prop_damage_advanced_single_blade':
+                row["Start_propeller_angle"] = self.chosen_failure.start_propeller_angle
+                row["Blade"] = self.chosen_failure.blade
+            else:
+                row["Start_propeller_angle"] = -1
+                row["Blade"] = -1
             row["Magnitude_start"] = self.chosen_failure.start_pwm
             if self.chosen_failure.time_modality_local == 1:
                 row["Time_linear_slope"] = self.chosen_failure.linear_slope
@@ -215,12 +224,17 @@ class FailureFactory:
             writer = csv.DictWriter(f, fieldnames=self.header)
             writer.writerows([row])
 
-    def reset(self):
+    def reset(self, reset_failures: bool = False):
         """
         All the created variables are reset in order to make sure that unwanted information is not
         passed among iterations
         :return: None
         """
+        if reset_failures:
+            drones = [scene_object for scene_object in self.client.simListSceneObjects() if "Drone" in scene_object]
+            for drone in drones:
+                if self.chosen_failure is not None:
+                    self.chosen_failure.reset(vehicle_name=drone)
         self.chosen_failure = None
         self.chosen_mode = None
         self.local_failure_mode = None
@@ -231,5 +245,6 @@ class FailureFactory:
 
         self.start_timestamp = None
         self.end_timestamp = None
+        self.failure_timestamp = None
 
         self.iteration += 1
