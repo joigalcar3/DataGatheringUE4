@@ -67,7 +67,7 @@ def load_user_input():
     parser.add_argument('--cell_size_m', type=float, default=3, help='Grid cell size: m')
     parser.add_argument('--ue4_airsim_conversion_units', type=int, default=100,
                         help='Conversion factor from Unreal Engine 4 to Airsim units (m)')
-    parser.add_argument('--saved_vertices_filename', type=str, default='object_points',    #'object_points', 'SunTemple_object_points'
+    parser.add_argument('--saved_vertices_filename', type=str, default='Blocks_object_points',    #'object_points', 'SunTemple_object_points'
                         help='Directory where to save cloud points')
     parser.add_argument('--update_saved_vertices', type=bool, default=False,
                         help='Whether the saved cloud points should be saved')
