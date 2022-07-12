@@ -164,7 +164,7 @@ PythonRobotics/CODE_OF_CONDUCT.md
 PythonRobotics/CONTRIBUTING.md
 PythonRobotics/environment.yml
 PythonRobotics/LICENSE
-PythonRobotics/mypi.ini
+PythonRobotics/mypy.ini
 PythonRobotics/README.md
 PythonRobotics/requirements.txt
 PythonRobotics/rundiffstylecheck.sh
