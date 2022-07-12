@@ -136,6 +136,38 @@ Dummy.py
 
 *.p
 
+# Files and folders that I create and that should not be included
 Sensor_data/Test/
-
+Old
+Flight_info
+FailureTypes/Old
 .idea/
+
+# Unnecessary files from PythonRobotics
+PythonRobotics/AerialNavigation
+PythonRobotics/ArmNavigation
+PythonRobotics/Bipedal
+PythonRobotics/InvertedPendulumCart
+PythonRobotics/Localization
+PythonRobotics/Mapping
+PythonRobotics/SLAM
+PythonRobotics/PathTracking
+PythonRobotics/.circleci
+PythonRobotics/.gitignore
+PythonRobotics/.lgtm.yml
+PythonRobotics/__init__.py
+PythonRobotics/_config.yml
+PythonRobotics/appveyor.yml
+PythonRobotics/CODE_OF_CONDUCT.md
+PythonRobotics/CONTRIBUTING.md
+PythonRobotics/environment.yml
+PythonRobotics/LICENSE
+PythonRobotics/mypi.ini
+PythonRobotics/README.md
+PythonRobotics/requirements.txt
+PythonRobotics/rundiffstylecheck.sh
+PythonRobotics/SECURITY.md
+PythonRobotics/users_comments.md
+
+
+
