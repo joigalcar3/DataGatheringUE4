@@ -117,3 +117,8 @@ as shown in the image below. Then you should see a drone hovering.
 
 11. If you want to launch the data collection, first check whether the settings in user_input.py suit you.
 The definition of each of the inputs can be read in the file. Once you are ready, run DataGathering.py.
+
+## Credits
+The path planning algorithms (PythonRobotics/PathPlanning) have been obtained from the PythonRobotics
+library of [Atsushi Sakai](https://github.com/AtsushiSakai/PythonRobotics). Multiple modifications have been 
+made to the original library in order to be compatible with the software architecture created for this project.

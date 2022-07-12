@@ -147,6 +147,8 @@ FailureTypes/Old
 PythonRobotics/AerialNavigation
 PythonRobotics/ArmNavigation
 PythonRobotics/Bipedal
+PythonRobotics/docs
+PythonRobotics/Introduction
 PythonRobotics/InvertedPendulumCart
 PythonRobotics/Localization
 PythonRobotics/Mapping
