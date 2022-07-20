@@ -57,17 +57,21 @@ def load_user_input():
     #                     help="Whether the take-off should be activated.")
 
     # Arguments related to the altitude selection
-    parser.add_argument('--altitude_m', type=int, default=7, help='Drone flight altitude: m')
-    parser.add_argument('--altitude_range_m', type=int, default=3,
+    parser.add_argument('--altitude_m', type=int, default=-30, help='Drone flight altitude: m')
+    parser.add_argument('--altitude_range_m', type=int, default=5,
                         help='Altitude range to slice the cloud of points: m')
-    parser.add_argument('--flight_altitudes', default=[3, 11],
+    parser.add_argument('--flight_altitudes', default=[6, 50],
                         help="Range of altitudes at which the drone could be spawned")
+    parser.add_argument('--constant_altitude_iterations', type=int, default=50,
+                        help="Number of runs that the altitude is maintained constant in order to reduce the"
+                             "computation load by not extracting the occupancy map. If it is 1, then the map is"
+                             "extracted in every run.")
 
     # Arguments related to the occupancy map generation
-    parser.add_argument('--cell_size_m', type=float, default=3, help='Grid cell size: m')
+    parser.add_argument('--cell_size_m', type=float, default=5, help='Grid cell size: m')
     parser.add_argument('--ue4_airsim_conversion_units', type=int, default=100,
                         help='Conversion factor from Unreal Engine 4 to Airsim units (m)')
-    parser.add_argument('--saved_vertices_filename', type=str, default='Blocks_object_points',    #'object_points', 'SunTemple_object_points'
+    parser.add_argument('--saved_vertices_filename', type=str, default='CoenCity_object_points',    #'object_points', 'SunTemple_object_points', CoenCity_Object_points
                         help='Directory where to save cloud points')
     parser.add_argument('--update_saved_vertices', type=bool, default=False,
                         help='Whether the saved cloud points should be saved')
@@ -75,11 +79,11 @@ def load_user_input():
     # Arguments related to the drone navigation
     parser.add_argument('--min_flight_distance_m', type=int, default=20,   # 30
                         help='Minimum distance that a drone must fly in order to be considered a flight')
-    parser.add_argument('--max_flight_distance_m', type=int, default=30,   # 200
+    parser.add_argument('--max_flight_distance_m', type=int, default=50,   # 200
                         help='Maximum distance that a drone must fly in order to be considered a flight')
-    parser.add_argument('--start', default=(24, 42), help='Starting flight location (tuple). If None, random point.') #(25, 37)  (27, 68) (25, 37) (38, 50) (25, 42) (36, 32) (34, 42) (16, 30)  (10, 42)
-    parser.add_argument('--goal', default=(14, 42),
-                        help='Target flight location (tuple). If None, random point.')  # (50, 50)  (11, 7) (38, 50) (25, 37) (36, 32) (25, 42) (10, 42) (16, 54)  (34, 42)
+    parser.add_argument('--start', default=None, help='Starting flight location (tuple). If None, random point.') #(25, 37)  (27, 68) (25, 37) (38, 50) (25, 42) (36, 32) (34, 42) (16, 30)  (10, 42), (24, 42)
+    parser.add_argument('--goal', default=None,
+                        help='Target flight location (tuple). If None, random point.')  # (50, 50)  (11, 7) (38, 50) (25, 37) (36, 32) (25, 42) (10, 42) (16, 54)  (34, 42), (14, 42)
     parser.add_argument('--robot_radius', type=int, default=9,
                         help='Size of the robot in order to maintain a minimum distance'
                              'to the obstacles for the A_star, Voronoid and PRM algorithms: m')
@@ -99,7 +103,7 @@ def load_user_input():
                         help='Method employed for navigation: A_star, wavefront, Voronoid, RRT_star and PRM')
 
     # Arguments related to the failure factory
-    parser.add_argument('--failure_types', default=[],  #'prop_fly_off_dis_abr', 'actuator_saturation_dis_abr', 'prop_damage_advanced_single_blade_dis_abr', 'actuator_locked_dis_abr'
+    parser.add_argument('--failure_types', default=['prop_damage_advanced_single_blade_dis_abr'],  #'prop_fly_off_dis_abr', 'actuator_saturation_dis_abr', 'prop_damage_advanced_single_blade_dis_abr', 'actuator_locked_dis_abr'
                         help="Failures types considered during the flight. Options listed in the Failure Factory. It"
                              "needs to be followed by dis or con (or mix), which tells the factory the number of "
                              "options considered for failure and abr or lin, which tells the factory the time component"
@@ -110,7 +114,7 @@ def load_user_input():
                         help="Whether the take-off should be activated.")
 
     # Arguments related to the data gathering
-    parser.add_argument('--number_runs', type=int, default=50,
+    parser.add_argument('--number_runs', type=int, default=1000,
                         help='Number of runs to be performed')
 
     # Arguments for debugging purposes
@@ -185,6 +189,10 @@ def load_user_input():
                                                                        ['posref.pos_ref_y', 'posref.pos_ref_x',
                                                                         'posref.pos_ref_z']]],
                         help='Signals to be plotted against each other instead of along their timestamp/index')
+
+    # Arguments os search
+    parser.add_argument('--json_config_loc', type=str, default="C:\\Users\\jdealvearcarde\\AirSim\\settings.json",
+                        help='Location of the json configuration file for AirSim.')
 
     return parser.parse_args()
 

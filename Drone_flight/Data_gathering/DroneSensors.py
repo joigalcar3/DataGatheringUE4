@@ -2,9 +2,8 @@ import airsim
 import os
 import time
 import numpy as np
-from icecream import ic
-from DroneCamera import DroneCamera
-from utils import transform_list_to_string, unwrapping_json
+from Drone_flight.Data_gathering.DroneCamera import DroneCamera
+from utils import transform_list_to_string
 from user_input import load_user_input
 
 

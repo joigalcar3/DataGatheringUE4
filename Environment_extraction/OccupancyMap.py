@@ -13,7 +13,8 @@ from user_input import load_user_input
 
 
 class OccupancyMap:
-    def __init__(self, folder="Point_files", extent_x=100, extent_y=100, cell_size=1, ue4_airsim_conv=100, client=None):
+    def __init__(self, folder="Environment_extraction//Point_files", extent_x=100, extent_y=100, cell_size=1,
+                 ue4_airsim_conv=100, client=None):
         self.client = client
         self.folder = os.path.join(os.getcwd(), folder)
         self.filename = None
@@ -105,7 +106,7 @@ class OccupancyMap:
             point_filtered = points[(points[:, -1] <= h_max) &
                                     (points[:, -1] >= h_min)]   # Filter the points found within the range
             pf_projected = point_filtered[:, :-1]   # Remove the altitude component
-            if pf_projected.size and name != 'externalcamera':   # Only considered objects which have points in the point cloud slice
+            if pf_projected.size and name != 'externalcamera' and 'cinecameraactor' not in name:   # Only considered objects which have points in the point cloud slice
                 filtered_points[name] = pf_projected  # Object filtered points
         self.filtered_points = filtered_points
         ic("Total number of 3D points: " + str(counter_points))

@@ -12,17 +12,17 @@ class Plotter3D(pv.Plotter):
         self.current_grid_actor = None
 
         super(Plotter3D, self).__init__()
-        self.background_color = '#FFFFFF' # '#f0f0f0'
+        self.background_color = '#FFFFFF'  # '#f0f0f0'
 
         # Arrow colors: X -> Red, Y -> Green, Z -> Blue (RGB).
         self.add_axes_at_origin(labels_off=True)
         if interactive:
-            #camera_pos = (-1,-1,0)
-            #up = (0,0,1)
-            #focus_point = (0,0,0)
-            camera_pos = (0,0,90)
-            up = (1,0,0)
-            focus_point = (0,0,0)
+            # camera_pos = (-1,-1,0)
+            # up = (0,0,1)
+            # focus_point = (0,0,0)
+            camera_pos = (0, 0, 90)
+            up = (1, 0, 0)
+            focus_point = (0, 0, 0)
             self.show(cpos=[camera_pos, focus_point, up],
                       interactive_update=True, auto_close=False)
 
@@ -53,7 +53,7 @@ class Plotter3D(pv.Plotter):
             img = img[nonnan_mask]
             actor = self.add_mesh(
                 pc, scalars=img,
-                style='points', point_size=size, rgb=True, smooth_shading =True)
+                style='points', point_size=size, rgb=True, smooth_shading=True)
 
             pass
         self.prev_point_clouds.append(actor)
@@ -70,7 +70,7 @@ class Plotter3D(pv.Plotter):
         dims[:2] = np.array(grid_array.shape)+1
         grid_pv = pv.UniformGrid(dims)
 
-        grid_pv.spacing = (cell_size, cell_size, 1) # These are the cell sizes along each axis
+        grid_pv.spacing = (cell_size, cell_size, 1)  # These are the cell sizes along each axis
 
         # The bottom left corner of the data set
         grid_pv.origin = (self.occupancy_grid.limit_x_min,

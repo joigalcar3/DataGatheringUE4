@@ -12,11 +12,11 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-from PythonRobotics.PathPlanning.VisibilityRoadMap.geometry import Geometry
+from Drone_grid_navigation.PythonRobotics.PathPlanning.VisibilityRoadMap.geometry import Geometry
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
                 "/../VoronoiRoadMap/")
-from dijkstra_search import DijkstraSearch
+from Drone_grid_navigation.PythonRobotics.PathPlanning.VoronoiRoadMap.dijkstra_search import DijkstraSearch
 
 show_animation = True
 

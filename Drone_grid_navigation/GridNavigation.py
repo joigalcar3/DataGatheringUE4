@@ -1,14 +1,13 @@
-from OccupancyMap import OccupancyMap
-from PythonRobotics.PathPlanning.WavefrontCPP.wavefront_coverage_path_planner import wavefront, transform, \
-    visualize_path
-from PythonRobotics.PathPlanning.VoronoiRoadMap.voronoi_road_map import VoronoiRoadMapPlanner
-from PythonRobotics.PathPlanning.InformedRRTStar.informed_rrt_star import InformedRRTStar
-from PythonRobotics.PathPlanning.AStar.a_star import AStarPlanner
-from PythonRobotics.PathPlanning.BSplinePath.bspline_path import approximate_b_spline_path, interpolate_b_spline_path
-from PythonRobotics.PathPlanning.ProbabilisticRoadMap.probabilistic_road_map import prm_planning
-from PythonRobotics.PathPlanning.CubicSpline.cubic_spline_planner import Spline2D
+from Environment_extraction.OccupancyMap import OccupancyMap
+from Drone_grid_navigation.PythonRobotics.PathPlanning.WavefrontCPP.wavefront_coverage_path_planner import wavefront, \
+    transform, visualize_path
+from Drone_grid_navigation.PythonRobotics.PathPlanning.VoronoiRoadMap.voronoi_road_map import VoronoiRoadMapPlanner
+from Drone_grid_navigation.PythonRobotics.PathPlanning.InformedRRTStar.informed_rrt_star import InformedRRTStar
+from Drone_grid_navigation.PythonRobotics.PathPlanning.AStar.a_star import AStarPlanner
+from Drone_grid_navigation.PythonRobotics.PathPlanning.BSplinePath.bspline_path import approximate_b_spline_path
+from Drone_grid_navigation.PythonRobotics.PathPlanning.ProbabilisticRoadMap.probabilistic_road_map import prm_planning
+from Drone_grid_navigation.PythonRobotics.PathPlanning.CubicSpline.cubic_spline_planner import Spline2D
 from user_input import load_user_input
-from math import isclose
 
 import numpy as np
 import matplotlib.pyplot as plt

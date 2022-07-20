@@ -1,22 +1,19 @@
 import airsim
 import numpy as np
 from math import atan2, pi, sin, cos, degrees
-import time
 import sys
 import random
 from datetime import datetime
 import keyboard
 from icecream import ic
 import time
-import matplotlib.pyplot as plt
-import scipy.integrate as integrate
 
-from OccupancyMap import OccupancyMap
-from GridNavigation import GridNavigation
-from DroneSensors import DroneSensors
+from Environment_extraction.OccupancyMap import OccupancyMap
+from Drone_grid_navigation.GridNavigation import GridNavigation
+from Drone_flight.Data_gathering.DroneSensors import DroneSensors
 from utils import compute_distance_points
 from user_input import load_user_input
-from FailureFactory import FailureFactory
+from Drone_flight.Failure_injection.FailureFactory import FailureFactory
 from ControllerTuning import ControllerTuning
 
 
@@ -172,6 +169,7 @@ class DroneFlight:
         if altitude_m is not None:
             self.altitude_m = altitude_m
             self.altitude = self.distance_to_ue4(altitude_m, True)
+
         # Extract occupancy grid
         self.env_map = OccupancyMap(cell_size=self.cell_size, ue4_airsim_conv=self.ue4_airsim_factor,
                                     client=self.client)
@@ -514,7 +512,7 @@ class DroneFlight:
         self.controller_tuning.reset()
 
     def run(self, navigation_type="A_star", start_point=None, goal_point=None, min_h=None, max_h=None,
-            activate_reset=True):
+            activate_reset=True, activate_map_extraction=True):
         """
         Method that carries out the complete flight of a drone. First, the occupancy map is extracted and the navigation
         of the drone is computed. Then, the drone is teleported to the start, the drone takes-off and flies the
@@ -525,15 +523,19 @@ class DroneFlight:
         :param max_h: maximum altitude considered for the flight
         :param min_h: minimum altitude considered for the flight
         :param activate_reset: whether the airsim client needs to be reseted after the run
+        :param activate_map_extraction: whether the map should be extracted. When carrying out multiple runs, extracting
+        the environment every time is very expensive. Hence, the altitude could be fixed for multiple runs such that
+        the map remains constant. When the altitude is maintained constant, the map does not have to be extracted.
         :return:
         """
         # Obtain occupancy map from the AirSim environment
-        if self.altitude_m > 0:
-            h = -random.randint(min_h, max_h)
-            self.extract_occupancy_map(h)
-            ic(h)
-        else:
-            self.extract_occupancy_map()
+        if activate_map_extraction:
+            if self.altitude_m > 0:
+                h = -random.randint(min_h, max_h)
+                self.extract_occupancy_map(h)
+                ic(h)
+            else:
+                self.extract_occupancy_map()
 
         # Navigate the drone within occupancy map and translate to AirSim path points
         self.navigate_drone_grid(navigation_type=navigation_type, start_point=start_point, goal_point=goal_point)

@@ -1,9 +1,7 @@
 import sys
-import _init_paths
 from icecream import ic
 from user_input import load_user_input
-from DroneFlight import DroneFlight
-from math import ceil
+from Drone_flight.DroneFlight import DroneFlight
 from pyswarm import pso
 import airsim
 
@@ -12,17 +10,15 @@ class DataGathering:
     """
     Class that allows the data gathering of multiple files
     """
-    def __init__(self, vehicle_name='', vehicle_start_position=None):
-        self.args = load_user_input()
+    def __init__(self, data, user_input, vehicle_name='', vehicle_start_position=None):
+        self.args = user_input
         self.number_runs = self.args.number_runs
         self.navigation_type = self.args.navigation_type
         self.flight_altitudes = self.args.flight_altitudes
+        self.constant_altitude_iterations = self.args.constant_altitude_iterations
         self.vehicle_name = vehicle_name
         self.vehicle_start_position = vehicle_start_position
 
-        location_json_file = "C:\\Users\jialv\OneDrive\Documentos\AirSim\settings.json"
-        with open(location_json_file) as f:
-            data = json.load(f)
         clock_speed = data['ClockSpeed']
         sample_rates = {key: value*clock_speed for key, value in self.args.sample_rates.items()}
 
@@ -53,9 +49,14 @@ class DataGathering:
         """
         self.drone_flight.reset(False)
         for run in range(self.number_runs):
+            if run % self.constant_altitude_iterations == 0:
+                activate_map_extraction = True
+            else:
+                activate_map_extraction = False
             _ = self.drone_flight.run(navigation_type=self.navigation_type, start_point=self.args.start,
                                       goal_point=self.args.goal, min_h=self.flight_altitudes[0],
-                                      max_h=self.flight_altitudes[1], activate_reset=True)
+                                      max_h=self.flight_altitudes[1], activate_reset=True,
+                                      activate_map_extraction=activate_map_extraction)
 
     def gather_data_single_run(self):
         """

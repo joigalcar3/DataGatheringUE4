@@ -136,6 +136,10 @@ Dummy.py
 
 *.p
 
+*.gif
+
+*.g2o
+
 # Files and folders that I create and that should not be included
 Sensor_data/Test/
 Old
@@ -144,32 +148,32 @@ FailureTypes/Old
 .idea/
 
 # Unnecessary files from PythonRobotics
-PythonRobotics/AerialNavigation
-PythonRobotics/ArmNavigation
-PythonRobotics/Bipedal
-PythonRobotics/docs
-PythonRobotics/Introduction
-PythonRobotics/InvertedPendulumCart
-PythonRobotics/Localization
-PythonRobotics/Mapping
-PythonRobotics/SLAM
-PythonRobotics/PathTracking
-PythonRobotics/.circleci
-PythonRobotics/.gitignore
-PythonRobotics/.lgtm.yml
-PythonRobotics/__init__.py
-PythonRobotics/_config.yml
-PythonRobotics/appveyor.yml
-PythonRobotics/CODE_OF_CONDUCT.md
-PythonRobotics/CONTRIBUTING.md
-PythonRobotics/environment.yml
-PythonRobotics/LICENSE
-PythonRobotics/mypy.ini
-PythonRobotics/README.md
-PythonRobotics/requirements.txt
-PythonRobotics/rundiffstylecheck.sh
-PythonRobotics/SECURITY.md
-PythonRobotics/users_comments.md
+Drone_grid_navigation.PythonRobotics/AerialNavigation
+Drone_grid_navigation.PythonRobotics/ArmNavigation
+Drone_grid_navigation.PythonRobotics/Bipedal
+Drone_grid_navigation.PythonRobotics/docs
+Drone_grid_navigation.PythonRobotics/Introduction
+Drone_grid_navigation.PythonRobotics/InvertedPendulumCart
+Drone_grid_navigation.PythonRobotics/Localization
+Drone_grid_navigation.PythonRobotics/Mapping
+Drone_grid_navigation.PythonRobotics/SLAM
+Drone_grid_navigation.PythonRobotics/PathTracking
+Drone_grid_navigation.PythonRobotics/.circleci
+Drone_grid_navigation.PythonRobotics/.gitignore
+Drone_grid_navigation.PythonRobotics/.lgtm.yml
+Drone_grid_navigation.PythonRobotics/__init__.py
+Drone_grid_navigation.PythonRobotics/_config.yml
+Drone_grid_navigation.PythonRobotics/appveyor.yml
+Drone_grid_navigation.PythonRobotics/CODE_OF_CONDUCT.md
+Drone_grid_navigation.PythonRobotics/CONTRIBUTING.md
+Drone_grid_navigation.PythonRobotics/environment.yml
+Drone_grid_navigation.PythonRobotics/LICENSE
+Drone_grid_navigation.PythonRobotics/mypy.ini
+Drone_grid_navigation.PythonRobotics/README.md
+Drone_grid_navigation.PythonRobotics/requirements.txt
+Drone_grid_navigation.PythonRobotics/rundiffstylecheck.sh
+Drone_grid_navigation.PythonRobotics/SECURITY.md
+Drone_grid_navigation.PythonRobotics/users_comments.md
 
 
 

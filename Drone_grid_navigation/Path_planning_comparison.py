@@ -10,9 +10,9 @@ from icecream import ic
 import matplotlib.pyplot as plt
 
 from user_input import load_user_input
-from DroneFlight import DroneFlight
-from OccupancyMap import OccupancyMap
-from GridNavigation import GridNavigation
+from Drone_flight.DroneFlight import DroneFlight
+from Environment_extraction.OccupancyMap import OccupancyMap
+from Drone_grid_navigation.GridNavigation import GridNavigation
 
 recompute_statistics = False
 
@@ -111,7 +111,7 @@ if recompute_statistics:
         end_time_nav = time.time()
         PP_computation_time["PRM"].append(end_time_nav - start_time_nav)
 else:
-    with open('PP_computation_time.pickle', 'rb') as infile:
+    with open('../PP_computation_time.pickle', 'rb') as infile:
         PP_computation_time = pickle.load(infile)
 
 keys = PP_computation_time.keys()

@@ -5,7 +5,7 @@ import os
 from icecream import ic
 import json
 
-from DataGathering import DataGathering
+from Drone_flight.Data_gathering.DataGathering import DataGathering
 from user_input import load_user_input
 from utils import merge_flight_infos
 

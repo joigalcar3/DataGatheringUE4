@@ -9,7 +9,7 @@ author: Atsushi Sakai (@Atsushi_twi)
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-from PythonRobotics.PathPlanning.VoronoiRoadMap.dijkstra_search import DijkstraSearch
+from Drone_grid_navigation.PythonRobotics.PathPlanning.VoronoiRoadMap.dijkstra_search import DijkstraSearch
 from scipy.spatial import cKDTree, Voronoi
 
 
