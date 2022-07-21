@@ -14,7 +14,7 @@ from Drone_flight.Data_gathering.DroneSensors import DroneSensors
 from utils import compute_distance_points
 from user_input import load_user_input
 from Drone_flight.Failure_injection.FailureFactory import FailureFactory
-from ControllerTuning import ControllerTuning
+from Drone_flight.ControllerTuning import ControllerTuning
 
 
 # TODO: take into account measurement time when considering the measurement frequency
@@ -27,26 +27,21 @@ class DroneFlight:
     the methods in order to make a single flight successful.
     """
 
-    def __init__(self, altitude_m, altitude_range_m, cell_size_m, ue4_airsim_factor, robot_radius_m, sensors,
-                 camera_info, sample_rates, clock_speed=1, min_flight_distance_m=30, max_flight_distance_m=200,
-                 saved_vertices_filename='object_points', update_saved_vertices=False, plot2D=False, plot3D=True,
-                 controller_tuning_switch=False, data_gather_types=None, plotting_controller_signals_aeo=None,
-                 plotting_controller_signals=False,vehicle_name='', vehicle_start_position=None, smooth=True,
-                 failure_types=None, activate_take_off=True):
+    def __init__(self, user_input, sample_rates, clock_speed=1, vehicle_name='', vehicle_start_position=None):
         if vehicle_start_position is None:
             vehicle_start_position = (0, 0, 0)
-        self.altitude_m = -altitude_m
-        self.altitude_range_m = altitude_range_m
-        self.cell_size_m = cell_size_m
-        self.min_flight_distance_m = min_flight_distance_m
-        self.max_flight_distance_m = max_flight_distance_m
-        self.saved_vertices_filename = saved_vertices_filename
-        self.update_saved_vertices = update_saved_vertices
-        self.plot2D = plot2D
-        self.plot3D = plot3D
+        self.altitude_m = -user_input.altitude_m
+        self.altitude_range_m = user_input.altitude_range_m
+        self.cell_size_m = user_input.cell_size_m
+        self.min_flight_distance_m = user_input.min_flight_distance_m
+        self.max_flight_distance_m = user_input.max_flight_distance_m
+        self.saved_vertices_filename = user_input.saved_vertices_filename
+        self.update_saved_vertices = user_input.update_saved_vertices
+        self.plot2D = user_input.plot2D
+        self.plot3D = user_input.plot3D
         self.vehicle_name = vehicle_name
         self.vehicle_start_position = vehicle_start_position
-        self.smooth = smooth
+        self.smooth = user_input.smooth
 
         self.start_grid = None
         self.goal_grid = None
@@ -55,8 +50,8 @@ class DroneFlight:
         self.path = None
         self.heading_start = None
 
-        self.ue4_airsim_factor = ue4_airsim_factor
-        self.robot_radius_m = robot_radius_m
+        self.ue4_airsim_factor = user_input.ue4_airsim_factor
+        self.robot_radius_m = user_input.robot_radius_m
         self.robot_radius = self.robot_radius_m / self.cell_size_m
         distances = [self.altitude_m, self.altitude_range_m, self.cell_size_m]
         altitude_flags = [True, False, False]
@@ -67,27 +62,18 @@ class DroneFlight:
 
         self.env_map = None
 
-        self.sensors = sensors
-        self.camera_info = camera_info
-        self.sample_rates = sample_rates
+        self.sensors = user_input.sensors
         self.clock_speed = clock_speed
-        self.sensors = DroneSensors(self.client, self.sensors, self.camera_info,
-                                    self.sample_rates, vehicle_name=self.vehicle_name)
+        self.sensors = DroneSensors(user_input, self.client, self.sensors, sample_rates, vehicle_name=self.vehicle_name)
 
-        self.failure_types = failure_types
-        self.failure_factory = FailureFactory(self.client, self.failure_types, self.clock_speed,
-                                              vehicle_name=self.vehicle_name)
+        self.failure_factory = FailureFactory(user_input, self.client, self.clock_speed, vehicle_name=self.vehicle_name)
         self.collision_type = -1
 
-        self.activate_take_off = activate_take_off
+        self.activate_take_off = user_input.activate_take_off
 
         # Controller tuning
-        self.controller_tuning_switch = controller_tuning_switch
-        self.data_gather_types = data_gather_types
-        self.plotting_controller_signals_aeo = plotting_controller_signals_aeo
-        self.plotting_controller_signals = plotting_controller_signals
-        self.controller_tuning = ControllerTuning(self.client, self.controller_tuning_switch, self.data_gather_types,
-                                                  self.plotting_controller_signals_aeo, self.plotting_controller_signals,
+        self.controller_tuning_switch = user_input.controller_tuning_switch
+        self.controller_tuning = ControllerTuning(user_input, self.client, self.controller_tuning_switch,
                                                   vehicle_name=self.vehicle_name)
 
     def distances_to_ue4(self, distances, altitude_flags):

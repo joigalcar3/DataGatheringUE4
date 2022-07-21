@@ -43,12 +43,19 @@ class FailureFactory:
               "Magnitude_start", "Time_linear_slope", "Continuity", "Time_modality", "Failure_timestamp", "Distance",
               "Percent_trip", "Collision_type"]
 
-    def __init__(self, client, failure_types, clock_speed=1, vehicle_name=''):
+    def __init__(self, user_input, client, clock_speed=1, vehicle_name=''):
+        if user_input.flight_info_remote_storage_location is None:
+            self.folder_name = os.path.join(os.getcwd(), self.folder_name)
+        else:
+            self.folder_name = os.path.join(user_input.flight_info_remote_storage_location, self.folder_name)
+        isExist = os.path.exists(self.folder_name)
+        if not isExist:
+            os.makedirs(self.folder_name)
         self.client = client
-        self.vehicle_name = vehicle_name
         self.clock_speed = clock_speed
-        if failure_types is not None:
-            self.failure_types = failure_types
+        self.vehicle_name = vehicle_name
+        if user_input.failure_types is not None:
+            self.failure_types = user_input.failure_types
         else:
             self.failure_types = []
         self.failure_modes = 1  # The failure mode 1 corresponds to no failure.

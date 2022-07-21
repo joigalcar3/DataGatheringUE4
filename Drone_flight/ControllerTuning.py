@@ -2,29 +2,31 @@ import scipy.integrate as integrate
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import pickle
+import os
 
 
 class ControllerTuning:
-    def __init__(self, client, controller_tuning_switch, data_gather_types, plotting_controller_signals_aeo,
-                 plotting_controller_signals, vehicle_name=''):
+    def __init__(self, user_input, client, controller_tuning_switch, vehicle_name=''):
         """
         Initialises the class in charge of collecting data from the simulation and plot it for controller tuning
         purposes
+        :param client: the airsim client
         :param controller_tuning_switch: whether the controller is going to be tuned and the methods need to be executed
-        :param data_gather_types: what data is going to be gathered
-        :param plotting_controller_signals: which groups of signals are going to be plotted
         :param vehicle_name: the name of the vehicle
         """
         self.controller_tuning_switch = controller_tuning_switch
         self.client = client
-        self.data_gather_types = data_gather_types
-        self.plotting_controller_signals = plotting_controller_signals
-        self.plotting_controller_signals_aeo = plotting_controller_signals_aeo  # plotting signals against each other
+        self.data_gather_types = user_input.data_gather_types
+        self.plotting_controller_signals = user_input.plotting_controller_signals
+        self.plotting_controller_signals_aeo = user_input.plotting_controller_signals_aeo  # plotting signals against each other
         self.vehicle_name = vehicle_name
         self.data_gathered = {}
         self.figure_number = 1
         self.colour_list = ['r-', 'b-', 'g-', 'm-', 'y-']
         self.number_data_points = None
+
+        self.save_scope_images = user_input.save_scope_images
+        self.scope_images_store_location = user_input.scope_images_store_location
 
     def initialize_data_gathering(self):
         """
@@ -95,7 +97,7 @@ class ControllerTuning:
 
             return total_error
 
-    def scope_plotting_signals(self, save_images=False, store_location=""):
+    def scope_plotting_signals(self):
         """
         Plot the signals and group of signals specified within plotting_controller_signals
         :return:
@@ -111,7 +113,7 @@ class ControllerTuning:
                         package[name] = data
                     else:
                         package[name] = data[:self.number_data_points]
-                self.scope_plotting_signal(package, save_images, store_location)
+                self.scope_plotting_signal(package)
 
             for i in range(len(self.plotting_controller_signals_aeo)):
                 lines = self.plotting_controller_signals_aeo[i]
@@ -127,7 +129,7 @@ class ControllerTuning:
                         package_signals.append(data[:self.number_data_points])
                     package_lines.append(package_signals)
                     names_lines.append(names_signals)
-                self.nD_signal_plotting(package_lines, names_lines, save_images, store_location)
+                self.nD_signal_plotting(package_lines, names_lines)
         plt.show()
 
     def retrieve_name_data(self, signal):
@@ -140,7 +142,7 @@ class ControllerTuning:
             data = self.data_gathered[complete_name[0]][name]
         return name, data
 
-    def scope_plotting_signal(self, signals, save_images, store_location):
+    def scope_plotting_signal(self, signals):
         """
         Method to plot a provided signal or signals within the same figure for comparison
         :return:
@@ -159,13 +161,17 @@ class ControllerTuning:
         plt.ylabel("Measured_value")
         plt.grid(True)
         plt.legend()
-        if save_images:
-            figure_name = store_location + "\\" + title + ".png"
-            pickle_name = store_location + "\\" + title + ".fig.pickle"
+        if self.save_scope_images:
+            scope_store_folder = os.path.join("Saved_scope_signals", self.scope_images_store_location)
+            isExist = os.path.exists(scope_store_folder)
+            if not isExist:
+                os.makedirs(scope_store_folder)
+            figure_name = scope_store_folder + "\\" + title + ".png"
+            pickle_name = scope_store_folder + "\\" + title + ".fig.pickle"
             pickle.dump(fig, open(pickle_name, 'wb'))
             plt.savefig(figure_name, dpi=300)
 
-    def nD_signal_plotting(self, signals, names, save_images, store_location):
+    def nD_signal_plotting(self, signals, names):
         signal_dimensionality = []
         number_signals = len(signals)
         for i in range(number_signals):
@@ -206,9 +212,13 @@ class ControllerTuning:
             plt.ylabel(y_label)
             plt.grid(True)
             plt.legend()
-            if save_images:
-                figure_name = store_location + "\\" + title + ".png"
-                pickle_name = store_location + "\\" + title + ".fig.pickle"
+            if self.save_scope_images:
+                scope_store_folder = os.path.join("Saved_scope_signals", self.scope_images_store_location)
+                isExist = os.path.exists(scope_store_folder)
+                if not isExist:
+                    os.makedirs(scope_store_folder)
+                figure_name = scope_store_folder + "\\" + title + ".png"
+                pickle_name = scope_store_folder + "\\" + title + ".fig.pickle"
                 pickle.dump(fig, open(pickle_name, 'wb'))
                 plt.savefig(figure_name, dpi=300)
         elif max_signal_dimensionality == 3:
@@ -218,9 +228,13 @@ class ControllerTuning:
             ax.set_zlabel(z_label)
             ax.invert_zaxis()
             ax.legend()
-            if save_images:
-                figure_name = store_location + "\\" + title + ".png"
-                pickle_name = store_location + "\\" + title + ".fig.pickle"
+            if self.save_scope_images:
+                scope_store_folder = os.path.join("Saved_scope_signals", self.scope_images_store_location)
+                isExist = os.path.exists(scope_store_folder)
+                if not isExist:
+                    os.makedirs(scope_store_folder)
+                figure_name = scope_store_folder + "\\" + title + ".png"
+                pickle_name = scope_store_folder + "\\" + title + ".fig.pickle"
                 pickle.dump(fig, open(pickle_name, 'wb'))
                 plt.savefig(figure_name, dpi=300)
 

@@ -15,9 +15,15 @@ class DroneSensors:
     # the drone in stand-by.
     UE4_second = 1e9
 
-    def __init__(self, client, sensors, cameras_info, sample_rates, folder='Sensor_data', vehicle_name=''):
+    def __init__(self, user_input, client, sensors, sample_rates, folder='Sensor_data', vehicle_name=''):
         self.client = client
-        self.folder = os.path.join(os.getcwd(), folder)
+        if user_input.sensors_remote_storage_location is None:
+            self.folder = os.path.join(os.getcwd(), folder)
+        else:
+            self.folder = os.path.join(user_input.sensors_remote_storage_location, folder)
+        isExist = os.path.exists(self.folder)
+        if not isExist:
+            os.makedirs(self.folder)
         self.flight_folder_location = None
         self.folder_name = None
         self.vehicle_name = vehicle_name
@@ -26,7 +32,7 @@ class DroneSensors:
         self.sensors = sensors
         self.number_sensors = len(sensors)
 
-        self.cameras_info = cameras_info
+        self.cameras_info = user_input.camera_info
         self.number_cameras = len(list(self.cameras_info.keys()))
         self.cameras = []
 
