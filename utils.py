@@ -2,6 +2,7 @@ import csv
 import os
 from scipy.spatial import Delaunay
 from matplotlib.pyplot import *
+import pickle
 from math import *
 import numpy as np
 
@@ -202,6 +203,19 @@ def obtain_outer_edge(points, alpha, only_outer=True):
     point_indices = list(set([point for edge in edges for point in edge]))
     output_points = points[point_indices]
     return edges, output_points
+
+
+def depickle(directory, filename):
+    """
+    Function to retrieve the information that has been pickled
+    :param directory: location where the file has been stored
+    :param filename: name of the file
+    :return: contents of the file
+    """
+    filename = os.path.join(directory, filename)
+    with open(filename, 'rb') as f:
+        contents = pickle.load(f)
+    return contents
 
 
 if __name__ == "__main__":
