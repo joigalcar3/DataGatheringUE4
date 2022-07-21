@@ -11,7 +11,7 @@ def init_paths():
 
     # Add libs to PYTHONPATH
     # Add failure types libraries
-    lib_path_failures = osp.join(this_dir, 'FailureTypes')
+    lib_path_failures = osp.join(this_dir, 'Drone_flight\\Failure_injection\\FailureTypes')
     add_path(lib_path_failures)
 
     # Add Navigation Algorithms libraries
