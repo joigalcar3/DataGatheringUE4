@@ -17,6 +17,10 @@ class OccupancyMap:
                  ue4_airsim_conv=100, client=None):
         self.client = client
         self.folder = os.path.join(os.getcwd(), folder)
+        isExist = os.path.exists(self.folder)
+        if not isExist:
+            os.makedirs(self.folder)
+
         self.filename = None
         self.ue4_airsim_conv = ue4_airsim_conv
 

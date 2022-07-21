@@ -1,4 +1,5 @@
 import argparse
+from user_input_file_loc import load_user_input_file_loc
 
 
 # %% Input parameters
@@ -71,8 +72,6 @@ def load_user_input():
     parser.add_argument('--cell_size_m', type=float, default=5, help='Grid cell size: m')
     parser.add_argument('--ue4_airsim_conversion_units', type=int, default=100,
                         help='Conversion factor from Unreal Engine 4 to Airsim units (m)')
-    parser.add_argument('--saved_vertices_filename', type=str, default='CoenCity_object_points',    #'object_points', 'SunTemple_object_points', CoenCity_Object_points
-                        help='Directory where to save cloud points')
     parser.add_argument('--update_saved_vertices', type=bool, default=False,
                         help='Whether the saved cloud points should be saved')
 
@@ -99,10 +98,6 @@ def load_user_input():
                                                    'gps': 30, 'barometer': 30},
                         help='Sampling rate for the sensors. Except the camera, the default sampling rates are'
                              ' from the original c++ code, in the simpleParams files for each sensor.')
-    parser.add_argument('--sensors_remote_storage_location',
-                        default="D:\\AirSim simulator\\DataGathering Python API\\multirotor\\Occupancy_grid",
-                        help='Location where the sensor information should be stored. If None, it will be stored'
-                             'within the "Drone_flight//Data_gathering" folder.')
 
     # Information regarding the navigation of the drone  sensors_remote_storage_location
     parser.add_argument('--navigation_type', type=str, default="A_star",
@@ -114,10 +109,6 @@ def load_user_input():
                              "needs to be followed by dis or con (or mix), which tells the factory the number of "
                              "options considered for failure and abr or lin, which tells the factory the time component"
                              "of the failure.")
-    parser.add_argument('--flight_info_remote_storage_location',
-                        default='D:\\AirSim simulator\\DataGathering Python API\\multirotor\\Occupancy_grid',
-                        help='Location where the flight information should be stored. If None, it will be stored'
-                             'within the "Occupancy_grid" folder.')
 
     # Arguments related to the drone flight
     parser.add_argument('--activate_take_off', type=bool, default=False,
@@ -138,8 +129,6 @@ def load_user_input():
                         help='Whether the plotting for PID controller tuning is activated.')
     parser.add_argument('--save_scope_images', type=bool, default=False,
                         help='Whether the scope plots should be stored.')
-    parser.add_argument('--scope_images_store_location', type=str, default="",
-                        help='The location where the scope images should be stored.')
     parser.add_argument('--data_gather_types', default=['position', 'posref', 'yawref', 'orientation', 'velref', 'vel',
                                                         'pqrref', 'pqr', 'omegas', 'thrustref', 'accref',
                                                         'positionintegrator', 'thrustpi', 'yawtransferfcn',
@@ -204,9 +193,7 @@ def load_user_input():
                                                                         'posref.pos_ref_z']]],
                         help='Signals to be plotted against each other instead of along their timestamp/index')
 
-    # Arguments os search
-    parser.add_argument('--json_config_loc', type=str, default="C:\\Users\\jdealvearcarde\\AirSim\\settings.json",
-                        help='Location of the json configuration file for AirSim.')
+    parser = load_user_input_file_loc(parser)
 
     return parser.parse_args()
 

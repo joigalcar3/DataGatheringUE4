@@ -26,6 +26,7 @@ class ControllerTuning:
         self.number_data_points = None
 
         self.save_scope_images = user_input.save_scope_images
+        self.scope_images_remote_store_location = user_input.scope_images_remote_store_location
         self.scope_images_store_location = user_input.scope_images_store_location
 
     def initialize_data_gathering(self):
@@ -162,7 +163,8 @@ class ControllerTuning:
         plt.grid(True)
         plt.legend()
         if self.save_scope_images:
-            scope_store_folder = os.path.join("Saved_scope_signals", self.scope_images_store_location)
+            scope_store_folder = os.path.join(self.scope_images_remote_store_location,
+                                              "Saved_scope_signals", self.scope_images_store_location)
             isExist = os.path.exists(scope_store_folder)
             if not isExist:
                 os.makedirs(scope_store_folder)
@@ -213,7 +215,8 @@ class ControllerTuning:
             plt.grid(True)
             plt.legend()
             if self.save_scope_images:
-                scope_store_folder = os.path.join("Saved_scope_signals", self.scope_images_store_location)
+                scope_store_folder = os.path.join(self.scope_images_remote_store_location,
+                                                  "Saved_scope_signals", self.scope_images_store_location)
                 isExist = os.path.exists(scope_store_folder)
                 if not isExist:
                     os.makedirs(scope_store_folder)
@@ -229,7 +232,8 @@ class ControllerTuning:
             ax.invert_zaxis()
             ax.legend()
             if self.save_scope_images:
-                scope_store_folder = os.path.join("Saved_scope_signals", self.scope_images_store_location)
+                scope_store_folder = os.path.join(self.scope_images_remote_store_location,
+                                                  "Saved_scope_signals", self.scope_images_store_location)
                 isExist = os.path.exists(scope_store_folder)
                 if not isExist:
                     os.makedirs(scope_store_folder)
