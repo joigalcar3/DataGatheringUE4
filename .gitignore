@@ -132,8 +132,6 @@ dmypy.json
 
 *.png
 
-Dummy.py
-
 *.p
 
 *.gif
@@ -141,11 +139,16 @@ Dummy.py
 *.g2o
 
 # Files and folders that I create and that should not be included
-Sensor_data/Test/
+.idea/
+
+Sensor_data/
 Old
 Flight_info
-FailureTypes/Old
-.idea/
+Drone_flight/Failure_injection/FailureTypes/Old
+Environment_extraction/Point_files
+
+user_input_file_loc.py
+Dummy.py
 
 # Unnecessary files from PythonRobotics
 Drone_grid_navigation.PythonRobotics/AerialNavigation
