@@ -50,7 +50,7 @@ class DroneFlight:
         self.path = None
         self.heading_start = None
 
-        self.ue4_airsim_factor = user_input.ue4_airsim_factor
+        self.ue4_airsim_factor = user_input.ue4_airsim_conversion_units
         self.robot_radius_m = user_input.robot_radius_m
         self.robot_radius = self.robot_radius_m / self.cell_size_m
         distances = [self.altitude_m, self.altitude_range_m, self.cell_size_m]

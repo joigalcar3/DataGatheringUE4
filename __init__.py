@@ -1,9 +1,13 @@
 # User input
 if __name__ == '__main__':
+    # Setup the system paths
+    from _init_paths import init_paths
+    init_paths()
+
     # Import self created libraries
     from user_input import load_user_input
     from Drone_flight.Data_gathering.DataGathering import DataGathering
-    from _init_paths import init_paths
+
     from _init_json_config import find_config_json
 
     # Import Python libraries
@@ -13,9 +17,6 @@ if __name__ == '__main__':
 
     # Set up the plotting backend
     mpl.use('TKAgg')
-
-    # Setup the system paths
-    init_paths()
 
     # Load the user input
     args = load_user_input()
