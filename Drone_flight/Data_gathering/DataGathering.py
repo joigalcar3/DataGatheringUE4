@@ -18,7 +18,8 @@ class DataGathering:
         self.constant_altitude_iterations = self.user_input.constant_altitude_iterations
 
         clock_speed = data['ClockSpeed']
-        sample_rates = {key: value*clock_speed for key, value in self.user_input.sample_rates.items()}
+        # sample_rates = {key: value*clock_speed for key, value in self.user_input.sample_rates.items()}
+        sample_rates = self.user_input.sample_rates
 
         # Create a Drone
         self.drone_flight = DroneFlight(self.user_input,

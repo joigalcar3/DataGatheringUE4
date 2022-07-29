@@ -15,5 +15,5 @@ def init_paths():
     add_path(lib_path_failures)
 
     # Add Navigation Algorithms libraries
-    lib_path_nav = osp.join(this_dir, 'Drone_grid_navigation/PythonRobotics')
+    lib_path_nav = osp.join(this_dir, 'Drone_grid_navigation\\PythonRobotics')
     add_path(lib_path_nav)

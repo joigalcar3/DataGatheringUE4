@@ -144,6 +144,7 @@ dmypy.json
 Sensor_data/
 Old
 Flight_info
+Sampling_rate_analysis
 Drone_flight/Failure_injection/FailureTypes/Old
 Environment_extraction/Point_files
 

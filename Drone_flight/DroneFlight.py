@@ -51,7 +51,7 @@ class DroneFlight:
         self.heading_start = None
 
         self.ue4_airsim_factor = user_input.ue4_airsim_conversion_units
-        self.robot_radius_m = user_input.robot_radius_m
+        self.robot_radius_m = user_input.robot_radius
         self.robot_radius = self.robot_radius_m / self.cell_size_m
         distances = [self.altitude_m, self.altitude_range_m, self.cell_size_m]
         altitude_flags = [True, False, False]
@@ -62,7 +62,7 @@ class DroneFlight:
 
         self.env_map = None
 
-        self.sensors = user_input.sensors
+        self.sensors = user_input.sensors_lst
         self.clock_speed = clock_speed
         self.sensors = DroneSensors(user_input, self.client, self.sensors, sample_rates, vehicle_name=self.vehicle_name)
 
@@ -475,9 +475,9 @@ class DroneFlight:
                 print('The letter K has been pressed.')
                 break
 
-            # When tuning the controller (also when not tuning), the maximum flight time is limited --> 20 sec if clock speed is 4x
+            # When tuning the controller (also when not tuning), the maximum flight time is limited --> 40 sec
             end_time = time.time()
-            if (end_time-start_time) > 20/self.clock_speed:
+            if (end_time-start_time) > 40/self.clock_speed:
                 not_arrived, distance, self.collision_type = [0, 100, 5]
 
         # Once the drone has arrived to its destination, the sensor and failure data is stored in their respective files

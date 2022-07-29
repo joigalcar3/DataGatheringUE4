@@ -32,7 +32,7 @@ class DroneSensors:
         self.sensors = sensors
         self.number_sensors = len(sensors)
 
-        self.cameras_info = user_input.camera_info
+        self.cameras_info = user_input.cameras_info
         self.number_cameras = len(list(self.cameras_info.keys()))
         self.cameras = []
 

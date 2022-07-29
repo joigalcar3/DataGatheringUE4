@@ -118,6 +118,36 @@ as shown in the image below. Then you should see a drone hovering.
 11. If you want to launch the data collection, first check whether the settings in user_input.py and user_input_file_loc.py
 suit you. The definition of each of the inputs can be read in the files. Once you are ready, run \_\_init__.py.
 
+## Notes
+The Bebop 2 drone has a camera that takes images at 30fps and it has an IMU that operates at 512 Hz. In order to run
+the simulation with data collection at similar rates the following __clockspeed__ needs to be set up depending on the 
+resolution of the images saved:
+
+* If the images collected have dimensions equal to 256x144 (widthxheight), then the clockspeed needs to be 0.8. 
+As a result, the camera is collecting images at 31.25fps and the imu at 666.79 Hz. The 
+_sample_rates_ of the camera and the imu in the _user_input_ file need to be set up higher than these values (e.g.
+camera:100, imu:100000).
+* If the images collected have dimensions equal to 512x288 (widthxheight), then the clockspeed needs to be 0.5.
+As a result, the camera is collecting images at 30fps and the imu at 666.79 Hz. The 
+_sample_rates_ of the camera and the imu in the _user_input_ file need to be set up higher than these values (e.g.
+camera:100, imu:100000).
+
+The slower the lock speed of the simulator, the more granular will be the measurements taken from the camera of the 
+sensors, meaning that the time difference between measurement and measurement will be smaller. As a result, there 
+are higher chances that the actual sampling rate equals the desired sample rate. The larger the clock speed, the larger 
+the time between the measurements and the lower the actual sampling rate.
+
+Additionally, in order to increase the sampling rate, it is possible to set up the _ViewMode_ in the settings file to 
+_"NoDisplay"_ such that the rendering to the main screen is frozen whereas the recording by the APIs remain active.
+As a result, resources are freed for getting images, increasing the sampling rate.
+
+Unfortunately, the sampling rate of each of the sensors is not as granular as desired. For instance, if with a certain 
+clockspeed the maximum IMU achievable sampling rate by the simulation is 330 Hz, then the other sampling rates that
+could be used are obtained by dividing this number (the maximum achievable sampling rate of the sensor with a certain 
+clockspeed) by integers. As a result, the sampling rates that one could choose for this example are 330 Hz,
+165 Hz, 110 Hz, 82.5 Hz, 66.55 Hz, 55 Hz, 47.14 Hz, 41.25 Hz, 36.66 Hz.
+
+
 ## Credits
 The path planning algorithms (PythonRobotics/PathPlanning) have been obtained from the PythonRobotics
 library of [Atsushi Sakai](https://github.com/AtsushiSakai/PythonRobotics). Multiple modifications have been 
