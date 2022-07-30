@@ -1,5 +1,6 @@
 import argparse
 from user_input_file_loc import load_user_input_file_loc
+from verify_user_input import verify_user_input
 
 
 # %% Input parameters
@@ -76,11 +77,13 @@ def load_user_input():
                         help='Whether the saved cloud points should be saved')
 
     # Arguments related to the drone navigation
-    parser.add_argument('--min_flight_distance_m', type=int, default=20,   # 30
-                        help='Minimum distance that a drone must fly in order to be considered a flight')
-    parser.add_argument('--max_flight_distance_m', type=int, default=50,   # 200
+    parser.add_argument('--min_flight_distance_m', type=int, default=12,   # 30
+                        help='Minimum distance that a drone must fly in order to be considered a flight. The value has '
+                             'to be higher than 10 since the failure can not take place 5 metres from the start or'
+                             '5 metres from the end.')
+    parser.add_argument('--max_flight_distance_m', type=int, default=25,   # 200
                         help='Maximum distance that a drone must fly in order to be considered a flight')
-    parser.add_argument('--start', default=None, help='Starting flight location (tuple). If None, random point.') #(25, 37)  (27, 68) (25, 37) (38, 50) (25, 42) (36, 32) (34, 42) (16, 30)  (10, 42), (24, 42)
+    parser.add_argument('--start', default=None, help='Starting flight location (tuple). If None, random point.')  #(25, 37)  (27, 68) (25, 37) (38, 50) (25, 42) (36, 32) (34, 42) (16, 30)  (10, 42), (24, 42)
     parser.add_argument('--goal', default=None,
                         help='Target flight location (tuple). If None, random point.')  # (50, 50)  (11, 7) (38, 50) (25, 37) (36, 32) (25, 42) (10, 42) (16, 54)  (34, 42), (14, 42)
     parser.add_argument('--robot_radius', type=int, default=9,
@@ -94,10 +97,11 @@ def load_user_input():
     parser.add_argument('--cameras_info', type=dict, default={'front': {"camera_name": "0", "image_type": 0}},
                         help='Dictionary containing the camera information: '
                              'alias, camera_name, image_type, pixels_as_float and compress')
-    parser.add_argument('--sample_rates', default={'camera': 30, 'imu': 512, 'magnetometer': 30,
+    parser.add_argument('--sample_rates', default={'camera': 35, 'imu': 700, 'magnetometer': 30,
                                                    'gps': 30, 'barometer': 30},
                         help='Sampling rate for the sensors. Except the camera, the default sampling rates are'
-                             ' from the original c++ code, in the simpleParams files for each sensor.')
+                             ' from the original c++ code, in the simpleParams files for each sensor.'
+                             'Originally, the camera is 30fps and the IMU 512')
 
     # Information regarding the navigation of the drone  sensors_remote_storage_location
     parser.add_argument('--navigation_type', type=str, default="A_star",
@@ -115,7 +119,7 @@ def load_user_input():
                         help="Whether the take-off should be activated.")
 
     # Arguments related to the data gathering
-    parser.add_argument('--number_runs', type=int, default=1000,
+    parser.add_argument('--number_runs', type=int, default=5000,
                         help='Number of runs to be performed')
 
     # Arguments for debugging purposes
@@ -194,6 +198,7 @@ def load_user_input():
                         help='Signals to be plotted against each other instead of along their timestamp/index')
 
     parser = load_user_input_file_loc(parser)
+    verify_user_input(parser)
 
     return parser.parse_args()
 

@@ -41,7 +41,7 @@ class FailureFactory:
     header = ['Iteration', "Sensor_folder", "Start_timestamp", "End_timestamp", "ClockSpeed", "Failure", "Failure_type",
               "Failure_mode", "Failure_mode_local", "Failure_magnitude", "Start_propeller_angle", "Blade",
               "Magnitude_start", "Time_linear_slope", "Continuity", "Time_modality", "Failure_timestamp", "Distance",
-              "Percent_trip", "Collision_type"]
+              "Percent_trip", "Collision_type", "Camera_fps", "IMU_frequency"]
 
     def __init__(self, user_input, client, clock_speed=1, vehicle_name=''):
         if user_input.flight_info_remote_storage_location is None:
@@ -84,6 +84,9 @@ class FailureFactory:
         self.start_timestamp = None       # Timestamp at which the iteration is started
         self.end_timestamp = None         # Timestamp at which the iteration is concluded
         self.failure_timestamp = None     # Timestamp at which the failure is executed
+
+        self.camera_fps = user_input.sample_rates['camera']
+        self.imu_frequency = user_input.sample_rates['imu']
 
     def initialise_failure_file(self):
         """
@@ -216,6 +219,10 @@ class FailureFactory:
 
             # Type of collision: 0=no collision, 1=collision with obstacle, 2=collision with ground, 3=fly away
             row["Collision_type"] = collision_type
+
+            # The desired rate for recording some sensors
+            row["Camera_fps"] = self.camera_fps
+            row["IMU_frequency"] = self.imu_frequency
         return row
 
     def write_to_file(self, collision_type, sensor_folder):
