@@ -81,12 +81,12 @@ class DroneSensors:
         """
         # Create the folder where the data of the flight will be saved
         try:
-            self.flight_folder_location = os.path.join(self.folder,
-                                                       time.strftime("%Y%m%d-%H%M%S") + "_" + self.vehicle_name[-1])
             self.folder_name = time.strftime("%Y%m%d-%H%M%S") + "_" + self.vehicle_name[-1]
+            self.flight_folder_location = os.path.join(self.folder, self.folder_name)
         except:
-            self.flight_folder_location = os.path.join(self.folder, time.strftime("%Y%m%d-%H%M%S"))
             self.folder_name = time.strftime("%Y%m%d-%H%M%S")
+            self.flight_folder_location = os.path.join(self.folder, self.folder_name)
+
         os.mkdir(self.flight_folder_location)
 
         # Initialize all the sensors
