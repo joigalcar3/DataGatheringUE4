@@ -10,7 +10,8 @@ mpl.use('TKAgg')
 
 # User input
 user_input = load_user_input()
-flight_data_numbers = list(range(34, 40))
+# flight_data_numbers = list(range(34, 40))
+flight_data_numbers = [41]
 n_flight_data_numbers = len(flight_data_numbers)
 
 # Creating necessary storage folders

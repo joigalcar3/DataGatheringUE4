@@ -46,7 +46,16 @@ class DroneCamera:
         Method to store the information from the camera prior to the flight in an Excel
         :return:
         """
-        response = self.client.simGetImages([self.obtain_camera_image()], vehicle_name=self.vehicle_name)[0]
+        camera_name = ''
+        trial_counter = 0
+        while camera_name == '':
+            if trial_counter > 2:
+                raise Exception("The camera metadata has an unknown camera name")
+            elif trial_counter != 0:
+                time.sleep(0.5)
+            response = self.client.simGetImages([self.obtain_camera_image()], vehicle_name=self.vehicle_name)[0]
+            camera_name = response.camera_name
+            trial_counter += 1
         self.width = response.width
         self.height = response.height
 
