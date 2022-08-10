@@ -16,7 +16,7 @@ def verify_user_input(parser):
     if test_content.min_flight_distance_m <= 10:
         warnings.warn(f"The minimum flight distance is not larger than 10 m: {test_content.min_flight_distance_m}.")
 
-    if test_content.min_flight_distance_m - test_content.max_flight_distance_m <= 5:
+    if test_content.max_flight_distance_m - test_content.min_flight_distance_m <= 5:
         warnings.warn(f"There is not enough flight distance for injecting a failure.")
 
     if test_content.start is not None:

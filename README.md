@@ -123,16 +123,39 @@ The Bebop 2 drone has a camera that takes images at 30fps and it has an IMU that
 the simulation with data collection at similar rates the following __clockspeed__ needs to be set up depending on the 
 resolution of the images saved:
 
-* If the images collected have dimensions equal to 256x144 (widthxheight), then the clockspeed needs to be 0.8. 
-As a result, the camera is collecting images at 31.25fps and the imu at 666.79 Hz. The 
-_sample_rates_ of the camera and the imu in the _user_input_ file need to be set up higher than these values (e.g.
-camera:100, imu:100000).
-* If the images collected have dimensions equal to 512x288 (widthxheight), then the clockspeed needs to be 0.5.
-As a result, the camera is collecting images at 30fps and the imu at 666.79 Hz. The 
-_sample_rates_ of the camera and the imu in the _user_input_ file need to be set up higher than these values (e.g.
-camera:100, imu:100000).
+* If the images collected have dimensions equal to 256x144 (widthxheight), then the clockspeed needs to be 0.7. 
+The two figures below shows the sampling rate of the camera and the IMU for different clockspeeds for 20 flights each. 
+The clockspeeds of 0.6, 0.7, 0.8, 0.9 and 1 are the closest to 30 fps, but the last 3 clockspeeds show IMU sampling 
+rates which are very far from the desired  512 Hz, namely 416 Hz, 370 Hz and 334 Hz. Between clockspeeds 0.6 and 0.7, 
+0.6 is closer to 30 fps by 0.7 fps and both are almost the same distance from 512 Hz for the IMU sampling rate.
+Despite 0.6 clockspeed leading to a camera sampling rate closer to the desired value, 0.7 is chosen due to the small 
+difference between both clockspeeds and because a clockspeed of 0.7 gathers data 1.17 times faster than a clockspeed of
+0.6. As a result, choosing a clockspeed of 0.7, the camera is collecting images at 31.33 fps and the imu at 476.6 Hz.
+The _sample_rates_ of the camera and the imu in the _user_input_ file need to be set up higher than these values 
+(camera:32, imu:700).
 
-The slower the lock speed of the simulator, the more granular will be the measurements taken from the camera of the 
+![Camera fps 288x512](Doc_images/144_256_camera_sampling_rate_2.png)
+![IMU sampling rate 288x512](Doc_images/144_256_IMU_sampling_rate_2.png)
+
+* If the images collected have dimensions equal to 512x288 (widthxheight), then the clockspeed needs to be 0.6. 
+The two figures below shows the sampling rate of the camera and the IMU for different clockspeeds for 20 flights each. The clockspeeds of
+0.6 and 0.7 are the closest to 30 fps, but the 0.6 clockspeed shows the lowest number of outliers.
+As a result, the camera is collecting images at 32 fps and the imu at 555.81 Hz. The _sample_rates_ of the camera 
+and the imu in the _user_input_ file need to be set up higher than these values (camera:35, imu:700).
+
+![Camera fps 288x512](Doc_images/288_512_camera_sampling_rate.png)
+![IMU sampling rate 288x512](Doc_images/288_512_IMU_sampling_rate.png)
+
+5,000 flights were flown with a clockspeed of 0.6 and image size 512x288 for the creation of the dataset. To verify that 
+the camera and IMU sampling rate predictions estimated with 20 flights were accurate, the same box plot was created with
+the flown 5,000 flights. The results are shown in the images below: the camera runs at 34 fps and the IMU has a sampling
+rate of 555.68 Hz. Hence. the actual camera sampling rate is higher than the estimation by 2 fps, whereas the IMU 
+estimation is very reliable.
+
+![Camera fps 288x512 with 5000 flights](Doc_images/288_512_camera_sampling_rate_5000_points.png)
+![IMU sampling rate 288x512 with 5000 flights](Doc_images/288_512_IMU_sampling_rate_5000_points.png)
+
+The slower the clockspeed of the simulator, the more granular will be the measurements taken from the camera of the 
 sensors, meaning that the time difference between measurement and measurement will be smaller. As a result, there 
 are higher chances that the actual sampling rate equals the desired sample rate. The larger the clock speed, the larger 
 the time between the measurements and the lower the actual sampling rate.

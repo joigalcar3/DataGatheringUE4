@@ -10,8 +10,8 @@ mpl.use('TKAgg')
 
 # User input
 user_input = load_user_input()
-# flight_data_numbers = list(range(34, 40))
-flight_data_numbers = [41]
+flight_data_numbers = list(range(50, 55))
+# flight_data_numbers = [50]
 n_flight_data_numbers = len(flight_data_numbers)
 
 # Creating necessary storage folders
@@ -109,7 +109,7 @@ for fps_lst in fps_flights_lst:
 plt.ticklabel_format(useOffset=False, axis='y')
 ax1.set_xticklabels(x_labels)
 plt.ylabel("Sample rate [fps]")
-plt.title(f"Camera sampling rate.")
+plt.title(f"Camera sampling rate")
 plt.grid(True)
 plt.savefig(os.path.join(storage_folder, f"{flight_data_file[:-4]}_camera.png"))
 
@@ -125,7 +125,7 @@ for imu_lst in imu_flights_lst:
 plt.ticklabel_format(useOffset=False, axis='y')
 ax2.set_xticklabels(x_labels)
 plt.ylabel("Sample rate [Hz]")
-plt.title(f"IMU sampling rate.")
+plt.title(f"IMU sampling rate")
 plt.grid(True)
 plt.savefig(os.path.join(storage_folder, f"{flight_data_file[:-4]}_imu.png"))
 plt.show()

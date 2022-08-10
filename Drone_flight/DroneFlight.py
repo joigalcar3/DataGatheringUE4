@@ -426,7 +426,7 @@ class DroneFlight:
                 message = "Collision ground"
                 ic(message)
                 return 0, distance, 2
-            elif current_time-self.failure_factory.failure_timestamp >= 0.5:
+            elif current_time-self.failure_factory.failure_timestamp >= 2:
                 message = '2 seconds passed since failure'
                 ic(message)
                 return 0, distance, 4
