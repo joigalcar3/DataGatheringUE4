@@ -10,3 +10,4 @@ opencv_contrib_python==4.5.1.48
 pyswarm==0.6
 pyvista==0.30.1
 scipy==1.6.2
+pandas~=1.3.5

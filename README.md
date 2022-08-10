@@ -134,8 +134,16 @@ difference between both clockspeeds and because a clockspeed of 0.7 gathers data
 The _sample_rates_ of the camera and the imu in the _user_input_ file need to be set up higher than these values 
 (camera:32, imu:700).
 
-![Camera fps 288x512](Doc_images/144_256_camera_sampling_rate_2.png)
-![IMU sampling rate 288x512](Doc_images/144_256_IMU_sampling_rate_2.png)
+![Camera fps 144x256](Doc_images/144_256_camera_sampling_rate_2.png)
+![IMU sampling rate 144x256](Doc_images/144_256_IMU_sampling_rate_2.png)
+
+3,598 flights were flown with a clockspeed of 0.7 and image size 256x144 for the creation of the dataset. To verify that 
+the camera and IMU sampling rate predictions estimated with 20 flights were accurate, the same box plot was created with
+the flown 3,598 flights. The results are shown in the images below: the camera runs at 31.33 fps and the IMU has a sampling
+rate of 476.28 Hz. Hence, the camera and IMU sampling rate estimations are very reliable.
+
+![Camera fps 288x512 with 5000 flights](Doc_images/144_256_camera_sampling_rate_3598_points.png)
+![IMU sampling rate 288x512 with 5000 flights](Doc_images/144_256_IMU_sampling_rate_3598_points.png)
 
 * If the images collected have dimensions equal to 512x288 (widthxheight), then the clockspeed needs to be 0.6. 
 The two figures below shows the sampling rate of the camera and the IMU for different clockspeeds for 20 flights each. The clockspeeds of
@@ -149,11 +157,21 @@ and the imu in the _user_input_ file need to be set up higher than these values 
 5,000 flights were flown with a clockspeed of 0.6 and image size 512x288 for the creation of the dataset. To verify that 
 the camera and IMU sampling rate predictions estimated with 20 flights were accurate, the same box plot was created with
 the flown 5,000 flights. The results are shown in the images below: the camera runs at 34 fps and the IMU has a sampling
-rate of 555.68 Hz. Hence. the actual camera sampling rate is higher than the estimation by 2 fps, whereas the IMU 
+rate of 555.68 Hz. Hence, the actual camera sampling rate is higher than the estimation by 2 fps, whereas the IMU 
 estimation is very reliable.
 
 ![Camera fps 288x512 with 5000 flights](Doc_images/288_512_camera_sampling_rate_5000_points.png)
 ![IMU sampling rate 288x512 with 5000 flights](Doc_images/288_512_IMU_sampling_rate_5000_points.png)
+
+* If the images collected have dimensions equal to 1024x576 (widthxheight), then the clockspeed needs to be 0.3. 
+The two figures below shows the sampling rate of the camera and the IMU for different clockspeeds for 20 flights each. The clockspeeds of
+0.2,0.3 and 0.4 are the closest to 30 fps, but the 0.4 clockspeed has a IMU sampling rate far from the desired 512 Hz.
+Also, 0.2 and 0.3 have a similar camera sampling rate, but 0.3 runs 1.5 times faster than 0.2; hence, it is the chosen one.
+As a result, the camera is collecting images at 31.6 fps and the imu at 555.62 Hz. The _sample_rates_ of the camera 
+and the imu in the _user_input_ file need to be set up higher than these values (camera:35, imu:700).
+
+![Camera fps 576x1024](Doc_images/576_1024_camera_sampling_rate.png)
+![IMU sampling rate 576x1024](Doc_images/576_1024_IMU_sampling_rate.png)
 
 The slower the clockspeed of the simulator, the more granular will be the measurements taken from the camera of the 
 sensors, meaning that the time difference between measurement and measurement will be smaller. As a result, there 
