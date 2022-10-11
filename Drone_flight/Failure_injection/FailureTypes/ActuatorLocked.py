@@ -7,10 +7,10 @@ from ActuatorFailureBase import ActuatorFailureBase
 class ActuatorLocked(ActuatorFailureBase):
     """
     Class which defines the parameters corresponding to actuator locking. There are two modes: (dis) whether the
-    propeller gets stuck at one of the following discrete PWM value {0, 0.25, 0.5, 0.75} or (con) in which each of the
+    propeller gets stuck at one of the following discrete PWM value {0.25, 0.5, 0.75} or (con) in which each of the
     propellers can attain any lock coefficient.
 
-    (Dis) Since there are 4 propellers and each propeller has 4 failure modes, there are 16 failure modes.
+    (Dis) Since there are 4 propellers and each propeller has 3 failure modes, there are 12 failure modes.
 
     (Con) In theory, there is an infinite number of failure modes, since the lock coefficient can acquire any value
     between 0 and 1. However, a design decision has been made to have only 4 failure modes and the lock coefficient can
@@ -18,7 +18,7 @@ class ActuatorLocked(ActuatorFailureBase):
     the probability of a non-failed actuator is 20%. Then there is a 20% of failure for each of the other actuators.
     The degree of the failure is a random value between 0 and 1 in steps of 0.01.
     """
-    failure_options = {"dis": 16, "con": 4}  # Define number of modes depending on whether continuous or discrete.
+    failure_options = {"dis": 12, "con": 4}  # Define number of modes depending on whether continuous or discrete.
     name = "actuator_locked"  # Name of the current failure type
     print_failure_args = ["Actuator Locked", 4]
 
@@ -91,10 +91,10 @@ class ActuatorLocked(ActuatorFailureBase):
         """
         if self.continuous:
             self.propeller = (self.mode - 1)
-            self.lock_coefficient_final = round(random.randrange(0, 101, self.step) / 100, 2)
+            self.lock_coefficient_final = round(random.randrange(24, 101, self.step) / 100, 2)
         else:
-            self.propeller = (self.mode - 1) // 4
-            self.lock_coefficient_final = (self.mode - 1) % 4 * 0.25
+            self.propeller = (self.mode - 1) // 3
+            self.lock_coefficient_final = 0.25 + (self.mode - 1) % 3 * 0.25
         self.magnitude_final = self.lock_coefficient_final
 
     def reset(self, vehicle_name=""):

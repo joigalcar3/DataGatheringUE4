@@ -7,10 +7,20 @@ import pandas as pd
 
 # Set up the plotting backend
 mpl.use('TKAgg')
+# Matplotlib settings
+mpl.rcParams['pdf.fonttype'] = 42
+mpl.rcParams['ps.fonttype'] = 42
+mpl.rcParams['font.family'] = 'Arial'
+mpl.rcParams['grid.alpha'] = 0.5
+# mpl.use('Agg')
+mpl.use('TkAgg')
+font = {'size': 42,
+        'family': "Arial"}
+mpl.rc('font', **font)
 
 # User input
 user_input = load_user_input()
-# flight_data_numbers = list(range(57, 63))
+# flight_data_numbers = list(range(34, 40))
 flight_data_numbers = [56]
 n_flight_data_numbers = len(flight_data_numbers)
 
@@ -90,7 +100,8 @@ for flight_data_number in flight_data_numbers:
         imu_frequency = flight_data["IMU_frequency"][0]
 
     # Creating the correct xlabel according to the run information
-    x_label = f"{flight_data_number}: {clockspeed}, {heigth}x{width}, C{camera_fps}, I{imu_frequency}"
+    # x_label = f"{flight_data_number}: {clockspeed}, {heigth}x{width}, C{camera_fps}, I{imu_frequency}"
+    x_label = f"{clockspeed}"
     x_labels.append(x_label)
 
     dataset_counter += 1
@@ -98,35 +109,41 @@ for flight_data_number in flight_data_numbers:
     imu_flights_lst.append(imu_lst)
 
 # Plot the collected fps values
-plt.figure(1)
+f = plt.figure(1)
 ax1 = plt.gca()
-plt.boxplot(fps_flights_lst, meanline=True)
+plt.boxplot(fps_flights_lst, meanline=True, flierprops={'markersize': 10})
 counter = 1
 for fps_lst in fps_flights_lst:
     x_jitter = np.random.normal(counter, 0.04, size=len(fps_lst))
-    plt.scatter(x_jitter, fps_lst)
+    plt.scatter(x_jitter, fps_lst, s=100)
     counter += 1
 plt.ticklabel_format(useOffset=False, axis='y')
 ax1.set_xticklabels(x_labels)
-plt.ylabel("Sample rate [fps]")
-plt.title(f"Camera sampling rate")
+plt.ylabel("Camera sample rate [fps]")
+plt.xlabel("Clockspeed [-]")
+# plt.title(f"Camera sampling rate")
 plt.grid(True)
+f.subplots_adjust(left=0.125, top=0.94, right=0.98, bottom=0.17)
+f.set_size_inches(19.24, 10.55)
 plt.savefig(os.path.join(storage_folder, f"{flight_data_file[:-4]}_camera.png"))
 
 # Plot the collected imu sampling rate values
-plt.figure(2)
+f = plt.figure(2)
 ax2 = plt.gca()
-plt.boxplot(imu_flights_lst, meanline=True)
+plt.boxplot(imu_flights_lst, meanline=True, flierprops={'markersize': 10})
 counter = 1
 for imu_lst in imu_flights_lst:
     x_jitter = np.random.normal(counter, 0.04, size=len(imu_lst))
-    plt.scatter(x_jitter, imu_lst)
+    plt.scatter(x_jitter, imu_lst, s=100)
     counter += 1
 plt.ticklabel_format(useOffset=False, axis='y')
 ax2.set_xticklabels(x_labels)
-plt.ylabel("Sample rate [Hz]")
-plt.title(f"IMU sampling rate")
+plt.ylabel("IMU sample rate [Hz]")
+plt.xlabel("Clockspeed [-]")
+# plt.title(f"IMU sampling rate")
 plt.grid(True)
+f.subplots_adjust(left=0.125, top=0.94, right=0.98, bottom=0.17)
+f.set_size_inches(19.24, 10.55)
 plt.savefig(os.path.join(storage_folder, f"{flight_data_file[:-4]}_imu.png"))
 plt.show()
 
