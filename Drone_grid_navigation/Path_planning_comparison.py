@@ -7,12 +7,22 @@ import statistics
 import matplotlib
 import numpy as np
 from icecream import ic
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from user_input import load_user_input
 from Drone_flight.DroneFlight import DroneFlight
 from Environment_extraction.OccupancyMap import OccupancyMap
 from Drone_grid_navigation.GridNavigation import GridNavigation
+
+# mpl.rcParams['pdf.fonttype'] = 30
+# mpl.rcParams['ps.fonttype'] = 30
+mpl.rcParams['font.family'] = 'Arial'
+mpl.rcParams['grid.alpha'] = 0.5
+mpl.use('TkAgg')
+font = {'size': 30,
+        'family': "Arial"}
+mpl.rc('font', **font)
 
 recompute_statistics = False
 
@@ -126,7 +136,7 @@ for key in keys:
         # An "interface" to matplotlib.axes.Axes.hist() method
         # plt.figure(fig_num)
         plt.subplot(2, 2, fig_num)
-        n, bins, patches = plt.hist(x=PP_computation_time_relative[key], bins='auto', color='#0504aa',
+        n, bins, patches = plt.hist(x=PP_computation_time_relative[key], bins='auto', color="#1f77b4",
                                     alpha=0.9, rwidth=0.85)
         plt.grid(axis='y', alpha=0.75)
         if key == 'RRT_star':
@@ -134,14 +144,14 @@ for key in keys:
         elif key == 'wavefront':
             key = 'Wavefront'
         # plt.xlabel('(t$_{' + key + '}$-t$_{A*}$)/t$_{A*}$', fontsize=13)
-        plt.xlabel('m(' + key + ')', fontsize=13)
-        plt.ylabel('Frequency', fontsize=13)
-        matplotlib.rc('xtick', labelsize=12)
-        matplotlib.rc('ytick', labelsize=12)
+        plt.xlabel('m(' + key + ')')
+        plt.ylabel('Frequency')
+        matplotlib.rc('xtick')
+        matplotlib.rc('ytick')
         # plt.title('Relative computational time wrt. A*')
         print_text = r"$\mu$ = " + str(round(mean, 2)) + "\n" + r"$\sigma$ = " + str(round(std, 2))
         maxfreq = n.max()
-        plt.text(bins[int(len(bins)*0.6)], (np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)*0.75, print_text, fontsize=12)
+        plt.text(bins[int(len(bins)*0.6)], (np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)*0.75, print_text)
         # Set a clean upper y-axis limit.
         plt.ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
 

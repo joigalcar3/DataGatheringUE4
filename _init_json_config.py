@@ -1,3 +1,18 @@
+#!/usr/bin/env python
+"""
+Provides the function that returns the location of the Airsim json settings file.
+"""
+
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.2 (21/12/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
+
+# Imports
 import json
 
 
@@ -5,7 +20,7 @@ def find_config_json(args_input):
     """
     Obtain the json configuration file that contains information regarding the number of drones and their names
     :param args_input: the inputs from the user input file
-    :return:
+    :return: file path to the json settings file and the contents of the file
     """
     try:
         location_json_file = args_input.json_config_loc

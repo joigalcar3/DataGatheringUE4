@@ -1,3 +1,22 @@
+#!/usr/bin/env python
+"""
+Provides a boxplot showing the spread of the camera and IMU sampling rates for different simulation clockspeeds. This
+information is later used to select the right simulation clockspeed for data collection.
+
+The plot consists of multiple boxplots, each representing a different clockspeed. Within each boxplot, one can observe
+scattered data points showing the fps or IMU sampling rate for a single flight.
+"""
+
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.2 (21/12/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
+
+# Imports
 from user_input import load_user_input
 import os
 import numpy as np
@@ -7,13 +26,10 @@ import pandas as pd
 
 # Set up the plotting backend
 mpl.use('TKAgg')
-# Matplotlib settings
 mpl.rcParams['pdf.fonttype'] = 42
 mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['font.family'] = 'Arial'
 mpl.rcParams['grid.alpha'] = 0.5
-# mpl.use('Agg')
-mpl.use('TkAgg')
 font = {'size': 42,
         'family': "Arial"}
 mpl.rc('font', **font)
@@ -24,7 +40,7 @@ user_input = load_user_input()
 flight_data_numbers = [56]
 n_flight_data_numbers = len(flight_data_numbers)
 
-# Creating necessary storage folders
+# Creating storage folders
 storage_folder = os.path.join(os.getcwd(), "Sampling_rate_analysis")
 isExist = os.path.exists(storage_folder)
 if not isExist:
@@ -36,10 +52,11 @@ x_labels = []
 fps_flights_lst = []
 imu_flights_lst = []
 for flight_data_number in flight_data_numbers:
+    # Location of flight and sensor information
     sensors_remote_storage_location = user_input.sensors_remote_storage_location
     flight_info_remote_storage_location = user_input.flight_info_remote_storage_location
-    # sensors_remote_storage_location = user_input.sensors_remote_storage_location
-    # flight_info_remote_storage_location = user_input.flight_info_remote_storage_location
+
+    # Extract flight information
     flight_info_folder = os.path.join(flight_info_remote_storage_location, "Flight_info")
     flight_info_files = os.listdir(flight_info_folder)
     flight_data_file = flight_info_files[[f"_{flight_data_number}_" in file for file in flight_info_files].index(True)]
@@ -47,6 +64,8 @@ for flight_data_number in flight_data_numbers:
     flight_data = pd.read_csv(flight_info)
     if not len(flight_data):
         continue
+
+    # Obtain number of flights and location of sensor information
     folders_to_analyze = flight_data["Sensor_folder"].tolist()
     sensor_folder = os.path.join(sensors_remote_storage_location, "Sensor_data")
     number_folders = len(folders_to_analyze)
@@ -78,6 +97,8 @@ for flight_data_number in flight_data_numbers:
         imu_lst.append(imu_sampling_rate)
         counter += 1
         print(f"{folder} got a camera sampling rate of {fps} fps and an IMU sampling rate of {imu_sampling_rate} Hz.")
+
+    # Print statistics of all flights in the data collection run
     print(f"Mean camera fps: {np.mean(fps_lst)}")
     print(f"Standard deviation camera fps: {np.std(fps_lst)}")
     print(f"Mean IMU frequency: {np.mean(imu_lst)}")
@@ -108,7 +129,8 @@ for flight_data_number in flight_data_numbers:
     fps_flights_lst.append(fps_lst)
     imu_flights_lst.append(imu_lst)
 
-# Plot the collected fps values
+# Plot the collected fps sampling rate values. There is one boxplot for each clockspeed analysed. In each
+# boxplot there are datapoints, each corresponds to a flight.
 f = plt.figure(1)
 ax1 = plt.gca()
 plt.boxplot(fps_flights_lst, meanline=True, flierprops={'markersize': 10})
@@ -119,10 +141,11 @@ for fps_lst in fps_flights_lst:
     counter += 1
 plt.ticklabel_format(useOffset=False, axis='y')
 ax1.set_xticklabels(x_labels)
-plt.ylabel("Camera sample rate [fps]")
+plt.ylabel("Camera sampling rate [fps]")
 plt.xlabel("Clockspeed [-]")
-# plt.title(f"Camera sampling rate")
+# plt.title(f"Camera sampling rate")  # commented out for the paper
 plt.grid(True)
+ax1.yaxis.set_label_coords(-0.1, 0.5)
 f.subplots_adjust(left=0.125, top=0.94, right=0.98, bottom=0.17)
 f.set_size_inches(19.24, 10.55)
 plt.savefig(os.path.join(storage_folder, f"{flight_data_file[:-4]}_camera.png"))
@@ -138,10 +161,11 @@ for imu_lst in imu_flights_lst:
     counter += 1
 plt.ticklabel_format(useOffset=False, axis='y')
 ax2.set_xticklabels(x_labels)
-plt.ylabel("IMU sample rate [Hz]")
+plt.ylabel("IMU sampling rate [Hz]")
 plt.xlabel("Clockspeed [-]")
-# plt.title(f"IMU sampling rate")
+# plt.title(f"IMU sampling rate")  # commented out for the paper
 plt.grid(True)
+ax2.yaxis.set_label_coords(-0.12, 0.5)
 f.subplots_adjust(left=0.125, top=0.94, right=0.98, bottom=0.17)
 f.set_size_inches(19.24, 10.55)
 plt.savefig(os.path.join(storage_folder, f"{flight_data_file[:-4]}_imu.png"))

@@ -1,3 +1,18 @@
+#!/usr/bin/env python
+"""
+Provides all the user inputs centralised in a single file.
+"""
+
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.2 (21/12/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
+
+# Imports
 import argparse
 from user_input_file_loc import load_user_input_file_loc
 from verify_user_input import verify_user_input
@@ -6,63 +21,16 @@ from verify_user_input import verify_user_input
 # %% Input parameters
 def load_user_input():
     """
-        Function that stores the user input
-    Returns:
-        parser.parse_args(): it passes the parser state
-    :return:
+    Function that stores the user input
+    :return: parser.parse_args() (the parser state)
     """
     parser = argparse.ArgumentParser()
-
-    # parser.add_argument('--altitude_m', type=int, default=0, help='Drone flight altitude: m')
-    # parser.add_argument('--altitude_range_m', type=int, default=3,
-    #                     help='Altitude range to slice the cloud of points: m')
-    # parser.add_argument('--cell_size_m', type=float, default=6, help='Grid cell size: m')
-    # parser.add_argument('--ue4_airsim_conversion_units', type=int, default=100,
-    #                     help='Conversion factor from Unreal Engine 4 to Airsim units (m)')
-    # parser.add_argument('--min_flight_distance_m', type=int, default=30,
-    #                     help='Minimum distance that a drone must fly in order to be considered a flight')
-    # parser.add_argument('--max_flight_distance_m', type=int, default=200,
-    #                     help='Maximum distance that a drone must fly in order to be considered a flight')
-    # parser.add_argument('--saved_vertices_filename', type=str, default='Temple_object_points',
-    #                     help='Directory where to save cloud points')
-    # parser.add_argument('--update_saved_vertices', type=bool, default=False,
-    #                     help='Whether the saved cloud points should be saved')
-    # parser.add_argument('--plot2D', type=bool, default=False, help='Whether the 2D plots should be shown.')
-    # parser.add_argument('--plot3D', type=bool, default=True, help='Whether the 3D plots should be shown.')
-    # parser.add_argument('--start', default=None, help='Starting flight location (tuple). If None, random point.')
-    # parser.add_argument('--goal', default=None, help='Target flight location (tuple). If None, random point.')
-    # parser.add_argument('--robot_radius', type=int, default=3,
-    #                     help='Size of the robot in order to maintain a minimum distance'
-    #                          'to the obstacles for the A_star, Voronoid and PRM algorithms: m')
-    # parser.add_argument('--smooth', type=bool, default=True, help='Whether the path is smoothed with B-splines.')
-    # parser.add_argument('--sensors_lst', type=list, default=['barometer', 'gps', 'magnetometer', 'imu'],
-    #                     help='List of sensors to use')
-    # parser.add_argument('--cameras_info', type=dict, default={'front': {"camera_name": "0", "image_type": 0}},
-    #                     help='Dictionary cotaining the camera information: '
-    #                          'alias, camera_name, image_type, pixels_as_float and compress')
-    # parser.add_argument('--sample_rates', default={'camera': 60, 'imu': 1000, 'magnetometer': 50,
-    #                                                'gps': 50, 'barometer': 50},
-    #                     help='Sampling rate for the sensors. Except the camera, the default sampling rates are'
-    #                          ' from the original c++ code, in the simpleParams files for each sensor.')
-    # parser.add_argument('--number_runs', type=int, default=50,
-    #                     help='Number of runs to be performed')
-    # parser.add_argument('--navigation_type', type=str, default="A_star",
-    #                     help='Method employed for navigation: A_star, wavefront, Voronoid, RRT_star and PRM')
-    # parser.add_argument('--flight_altitudes', default=[3, 11],
-    #                     help="Range of altitudes at which the drone could be spawned")
-    # parser.add_argument('--failure_types', default=["prop_fly_off_dis_abr", "actuator_saturation_dis_abr"],
-    #                     help="Failures types considered during the flight. Options listed in the Failure Factory. It"
-    #                          "needs to be followed by dis or con, which tells the factory the number of options"
-    #                          "considered for failure and abr or lin, which tells the factory the time component of the "
-    #                          "failure.")
-    # parser.add_argument('--activate_take_off', type=bool, default=False,
-    #                     help="Whether the take-off should be activated.")
 
     # Arguments related to the altitude selection
     parser.add_argument('--altitude_m', type=int, default=-30, help='Drone flight altitude: m')
     parser.add_argument('--altitude_range_m', type=int, default=5,
                         help='Altitude range to slice the cloud of points: m')
-    parser.add_argument('--flight_altitudes', default=[6, 50],
+    parser.add_argument('--flight_altitudes', default=[6, 30],
                         help="Range of altitudes at which the drone could be spawned")
     parser.add_argument('--constant_altitude_iterations', type=int, default=50,
                         help="Number of runs that the altitude is maintained constant in order to reduce the"
@@ -77,11 +45,11 @@ def load_user_input():
                         help='Whether the saved cloud points should be saved')
 
     # Arguments related to the drone navigation
-    parser.add_argument('--min_flight_distance_m', type=int, default=12,   # 30
+    parser.add_argument('--min_flight_distance_m', type=int, default=15,   # 30
                         help='Minimum distance that a drone must fly in order to be considered a flight. The value has '
                              'to be higher than 10 since the failure can not take place 5 metres from the start or'
                              '5 metres from the end.')
-    parser.add_argument('--max_flight_distance_m', type=int, default=25,   # 200
+    parser.add_argument('--max_flight_distance_m', type=int, default=35,   # 200
                         help='Maximum distance that a drone must fly in order to be considered a flight')
     parser.add_argument('--start', default=None, help='Starting flight location (tuple). If None, random point.')  #(25, 37)  (27, 68) (25, 37) (38, 50) (25, 42) (36, 32) (34, 42) (16, 30)  (10, 42), (24, 42)
     parser.add_argument('--goal', default=None,
@@ -97,7 +65,7 @@ def load_user_input():
     parser.add_argument('--cameras_info', type=dict, default={'front': {"camera_name": "0", "image_type": 0}},
                         help='Dictionary containing the camera information: '
                              'alias, camera_name, image_type, pixels_as_float and compress')
-    parser.add_argument('--sample_rates', default={'camera': 35, 'imu': 700, 'magnetometer': 30,
+    parser.add_argument('--sample_rates', default={'camera': 32, 'imu': 600, 'magnetometer': 30,
                                                    'gps': 30, 'barometer': 30},
                         help='Sampling rate for the sensors. Except the camera, the default sampling rates are'
                              ' from the original c++ code, in the simpleParams files for each sensor.'
@@ -201,30 +169,3 @@ def load_user_input():
     verify_user_input(parser)
 
     return parser.parse_args()
-
-# import airsim
-# import time
-
-# client = airsim.MultirotorClient()
-# before = client.getMultirotorState().timestamp
-# elapsed_lst = []
-# for i in range(1000):
-#     now = client.getMultirotorState().timestamp
-#     elapsed_time = now-before
-#     elapsed_lst.append(elapsed_time)
-#     # print(elapsed_time)
-#     time.sleep(1)
-#     before = now
-# print('Elapsed_time_mean: ', sum(elapsed_lst)/len(elapsed_lst))
-
-# Imu = client.getImuData().time_stamp
-# Gps = client.getGpsData().time_stamp
-# Magnetometer = client.getMagnetometerData().time_stamp
-# drone = client.getMultirotorState().timestamp
-# difference_21 = Gps-Imu
-# difference_31 = Magnetometer-Imu
-# difference_32 = Magnetometer-Gps
-# difference_41 = drone-Imu
-# difference_42 = drone-Gps
-# difference_43 = drone-Magnetometer
-# print(difference_21, difference_31, difference_32, difference_41, difference_42, difference_43)

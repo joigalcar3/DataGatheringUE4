@@ -1,10 +1,26 @@
-import airsim
+#!/usr/bin/env python
+"""
+Provides the DroneSensors class that manages all the actions of the sensors, namely their initialization, activation and
+data storage, as well as their reinitialization for a new flight.
+"""
+
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.2 (21/12/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
+
+# Import
 import os
 import time
+import airsim
 import numpy as np
-from Drone_flight.Data_gathering.DroneCamera import DroneCamera
-from utils import transform_list_to_string
 from user_input import load_user_input
+from utils import transform_list_to_string
+from Drone_flight.Data_gathering.DroneCamera import DroneCamera
 
 
 class DroneSensors:
@@ -16,6 +32,15 @@ class DroneSensors:
     UE4_second = 1e9
 
     def __init__(self, user_input, client, sensors, sample_rates, folder='Sensor_data', vehicle_name=''):
+        """
+        Initializes the DroneSensors class
+        :param user_input: the user provided inputs
+        :param client: the client object
+        :param sensors: the list of used sensors on board of the drone
+        :param sample_rates: the rate at which those sensors sample data
+        :param folder: the location where the sensor information will be stored
+        :param vehicle_name: the name of the vehicle carrying the sensors
+        """
         self.client = client
         if user_input.sensors_remote_storage_location is None:
             self.folder = os.path.join(os.getcwd(), folder)
@@ -44,7 +69,7 @@ class DroneSensors:
     def initialize_signal_sensors(self):
         """
         Method which initialises all the sensors listed in self.sensors, except the camera
-        :return:
+        :return: None
         """
         for sensor in self.sensors:
             self.initialize_signal_sensor(sensor)
@@ -54,8 +79,9 @@ class DroneSensors:
         Method that initialises the dictionary that stores the data and saves the header that is going to be used when
         storing the data. It supports barometer, gps, magnetometer, imu
         :param sensor_type: type of the sensor
-        :return:
+        :return: None
         """
+        # Calls the UE4 function that retrieves the sensor data in order to capture the variables that will be returned
         name_func = 'get' + sensor_type.capitalize() + 'StoredDataVec'
         output = getattr(self.client, name_func)(vehicle_name=self.vehicle_name)
         header_names = list(output.keys())
@@ -68,7 +94,7 @@ class DroneSensors:
     def initialize_cameras(self):
         """
         Initialize the camera sensors
-        :return:
+        :return: None
         """
         for camera in self.cameras_info.keys():
             self.cameras.append(DroneCamera(camera, self.cameras_info[camera], self.client, self.flight_folder_location,
@@ -77,7 +103,7 @@ class DroneSensors:
     def initialize_sensors(self):
         """
         Initialize all the sensors
-        :return:
+        :return: None
         """
         # Create the folder where the data of the flight will be saved
         try:
@@ -97,16 +123,17 @@ class DroneSensors:
         """
         Store the data from the sensors, except the cameras. The data is still not dumped in the storage files.
         This prevents the constant calling of write commands to files in the directory.
-        :return:
+        :return: None
         """
         for sensor in self.sensors:
             self.start_signal_sensor_data_storage(sensor)
 
     def start_signal_sensor_data_storage(self, sensor_type):
         """
-        Method that tells C++ to start storing IMU data, that will be retrieved when the data is to be written to a file
+        Method that tells C++ to start storing sensor (e.g. IMU) data, that will be retrieved when the data is to be
+        written to a file
         :param sensor_type: the sensor whose storage will be started.
-        :return:
+        :return: None
         """
         sample_rate = self.sample_rates[sensor_type]
         name_func = "".join(['set' + sensor_type.capitalize() + 'Activation'])
@@ -115,42 +142,50 @@ class DroneSensors:
     def store_camera_data(self):
         """
         Store the camera information
-        :return:
+        :return: None
         """
+        # Check when was the last time an image was taken
         sample_rate, time_old, time_now = self.sample_rates['camera'], self.last_sample_time['camera'], \
                                           self.client.getMultirotorState().timestamp
+
+        # If it is longer than a threshold, request to take an image
         if (self.UE4_second / sample_rate + time_old) < time_now:
-            # self.client.simPause(True)
             self.last_sample_time['camera'] = time_now
             camera_requests = [camera.obtain_camera_image() for camera in self.cameras]
             responses = self.client.simGetImages(camera_requests, vehicle_name=self.vehicle_name)
             for i in range(self.number_cameras):
                 self.cameras[i].store_camera_image(responses[i])
-            # self.client.simPause(False)
 
     def store_sensors_data(self):
         """
         Store the information from all the sensors
-        :return:
+        :return: None
         """
         self.store_camera_data()
 
     def write_signal_sensor_to_file(self):
         """
         Write the stored information to their respective files for each of the sensors
-        :return:
+        :return: None
         """
         for sensor in self.data.keys():
+            # Create file
             filename = sensor + ".csv"
             full_path = os.path.join(self.flight_folder_location, filename)
+
+            # Retrieve data
             name_func = 'get' + sensor.capitalize() + 'StoredDataVec'
             output = getattr(self.client, name_func)(vehicle_name=self.vehicle_name)
             elements = list(output.keys())
             number_data_points = len(output[elements[0]])
             unwrapped_data_lst = []
+
+            # Unwrap the data into a list
             for data_point in range(number_data_points):
                 data_point_lst = [output[element][data_point] for element in elements]
                 unwrapped_data_lst.append(data_point_lst)
+
+            # Convert list to array and save to file with header
             data_points = np.array(unwrapped_data_lst)
             header = self.headers[sensor]
             np.savetxt(full_path, data_points, delimiter=',', header=header)
@@ -158,7 +193,7 @@ class DroneSensors:
     def write_camera_to_file(self):
         """
         Write the stored images from the camera to their respective files
-        :return:
+        :return: None
         """
         for i in range(self.number_cameras):
             self.cameras[i].write_camera_to_file()
@@ -166,13 +201,18 @@ class DroneSensors:
     def write_to_file(self):
         """
         Write to the file the information stored by all the sensors
-        :return:
+        :return: None
         """
         self.write_signal_sensor_to_file()
         self.write_camera_to_file()
         self.restart_sensors()
 
     def clean_c_stored_data(self):
+        """
+        Clear the arrays in the C++ code of the UE4 simulation such that new sensor data can be stored for the next
+        flight
+        :return: None
+        """
         for sensor in self.sensors:
             name_func = 'clean' + sensor.capitalize() + 'StoredData'
             getattr(self.client, name_func)(vehicle_name=self.vehicle_name)
@@ -180,7 +220,7 @@ class DroneSensors:
     def restart_sensors(self):
         """
         All the information about the sensors is restarted once the data has been written to disk.
-        :return:
+        :return: None
         """
         self.clean_c_stored_data()
         self.cameras = []
@@ -194,7 +234,7 @@ class DroneSensors:
     def run(self):
         """
         Run the writing of data from the sensors at a sample rate of 10Hz for 1 second
-        :return:
+        :return: None
         """
         for i in range(10):
             self.store_sensors_data()
@@ -208,5 +248,5 @@ if __name__ == "__main__":
 
     # Object inputs
     client = airsim.MultirotorClient()
-    sensors = DroneSensors(client, args.sensors_lst, args.cameras_info, args.sample_rates)
+    sensors = DroneSensors(args, client, args.sensors_lst, args.sample_rates)
     sensors.run()

@@ -1,33 +1,56 @@
-import airsim
-import numpy as np
-from math import atan2, pi, sin, cos, degrees
-import sys
-import random
-from datetime import datetime
-import keyboard
-from icecream import ic
-import time
+#!/usr/bin/env python
+"""
+Provides the DroneFlight class which carries out the complete flight for a single drone.
 
+It performs from the generation of the map with OccupancyMap, to the obstacle avoidance with GridNavigation, to the
+collection of data with DroneSensors. It incorporates all the methods in order to make a single flight successful.
+"""
+
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.2 (21/12/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
+
+# Import
+import sys
+import time
+import airsim
+import random
+import keyboard
+import numpy as np
+from icecream import ic
+from datetime import datetime
+from math import atan2, pi, sin, cos, degrees
+
+from utils import compute_distance_points
+from Drone_flight.ControllerTuning import ControllerTuning
 from Environment_extraction.OccupancyMap import OccupancyMap
 from Drone_grid_navigation.GridNavigation import GridNavigation
 from Drone_flight.Data_gathering.DroneSensors import DroneSensors
-from utils import compute_distance_points
-from user_input import load_user_input
 from Drone_flight.Failure_injection.FailureFactory import FailureFactory
-from Drone_flight.ControllerTuning import ControllerTuning
-
-
-# TODO: take into account measurement time when considering the measurement frequency
 
 
 class DroneFlight:
     """
-    Class which carries out the complete flight from a single drone. From the generation of the map with OccupancyMap,
+    Class which carries out the complete flight for a single drone. From the generation of the map with OccupancyMap,
     to the obstacle avoidance with GridNavigation, to the collection of data with DroneSensors. It incorporates all
     the methods in order to make a single flight successful.
     """
-
     def __init__(self, user_input, sample_rates, clock_speed=1, vehicle_name='', vehicle_start_position=None):
+        """
+        Initializes the the flight of the drone
+        :param user_input: the inputs provided by the user
+        :param sample_rates: the desired sample rates at which sensor and camera data should be collected
+        :param clock_speed: the clock speed at which the simulation environment is running
+        :param vehicle_name: the name of the vehicle that will be flying
+        :param vehicle_start_position: the location where this vehicle was spawned for the first time in the Unreal
+        Engine environment
+        """
+        # Extracting all the desired user inputs
         if vehicle_start_position is None:
             vehicle_start_position = (0, 0, 0)
         self.altitude_m = -user_input.altitude_m
@@ -43,6 +66,7 @@ class DroneFlight:
         self.vehicle_start_position = vehicle_start_position
         self.smooth = user_input.smooth
 
+        # Initializing some useful parameters for navigation
         self.start_grid = None
         self.goal_grid = None
         self.start_world = None
@@ -50,6 +74,7 @@ class DroneFlight:
         self.path = None
         self.heading_start = None
 
+        # Parameters for the obstacle avoidance
         self.ue4_airsim_factor = user_input.ue4_airsim_conversion_units
         self.robot_radius_m = user_input.robot_radius
         self.robot_radius = self.robot_radius_m / self.cell_size_m
@@ -57,15 +82,19 @@ class DroneFlight:
         altitude_flags = [True, False, False]
         self.altitude, self.altitude_range, self.cell_size = self.distances_to_ue4(distances, altitude_flags)
 
+        # Airsim related parameters
         self.client = None
         self.connect_airsim()
 
+        # Environment related parameters
         self.env_map = None
 
+        # Initializing drone sensors
         self.sensors = user_input.sensors_lst
         self.clock_speed = clock_speed
         self.sensors = DroneSensors(user_input, self.client, self.sensors, sample_rates, vehicle_name=self.vehicle_name)
 
+        # Initializing the failure factory
         self.failure_factory = FailureFactory(user_input, self.client, self.clock_speed, vehicle_name=self.vehicle_name)
         self.collision_type = -1
 
@@ -138,7 +167,7 @@ class DroneFlight:
     def connect_airsim(self):
         """
         Method to establish the connection with the AirSim Multirotor
-        :return:
+        :return: None
         """
         # Connect to the AirSim simulator
         self.client = airsim.MultirotorClient()
@@ -150,7 +179,7 @@ class DroneFlight:
         """
         Method which extracts the 2D Occupancy grid using the provided altitude for slicing the point cloud
         :param altitude_m: altitude provided in meters
-        :return:
+        :return: None
         """
         if altitude_m is not None:
             self.altitude_m = altitude_m
@@ -166,7 +195,7 @@ class DroneFlight:
         """
         Method to obtain a random start and goal location within the constraints that they need to be separated with
         a minimum distance and that they need to be separated from the obstacles with a minimum distance of robot_radius
-        :return:
+        :return: None
         """
         x_dim = self.env_map.extent_x - 1
         y_dim = self.env_map.extent_y - 1
@@ -177,8 +206,8 @@ class DroneFlight:
         self.start_grid = (random.randint(0, x_dim), random.randint(0, y_dim))
         self.goal_grid = self.start_grid
 
-        # Generate new points as long as the points are generated on top of an obstacle or the distance between them is
-        # below the defined threshold.
+        # Generate new points as long as the points are not generated on top of an obstacle or the distance between
+        # them is below the defined threshold.
         while compute_distance_points(self.start_grid, self.goal_grid) < min_distance_grid or \
                 compute_distance_points(self.start_grid, self.goal_grid) > max_distance_grid or \
                 self.env_map.check_obstacle(self.goal_grid, self.robot_radius) or \
@@ -193,10 +222,9 @@ class DroneFlight:
         goal points are created if they have not been provided, then the navigation is computed with the method
         specified and finally, the path is smoothened with the B-spline if required.
         :param navigation_type: type of navigation chosen. The types are those outlined in GridNavigation.py
-        :param smooth: whether the path needs to be smoothened with the B-spline
         :param start_point: the starting point of the flight
         :param goal_point: the final point of the flight
-        :return:
+        :return: None
         """
         # If the start and goal points are not provided or the ones provided are on an obstacle, then they are generated
         if (start_point is None and goal_point is None) or \
@@ -226,9 +254,25 @@ class DroneFlight:
             path = nav.navigation_PRM(self.start_grid, self.goal_grid, self.robot_radius)
         else:
             raise ValueError("Navigation type does not exist.")
+
+        # Uncomment the following lines when choosing the Voronoi Roadmap planning in order to generate Figure 8.13 of
+        # the thesis
+        # fig=plt.figure(1)
+        # ax=plt.gca()
+        # # ax.axis((0, 79, 0, 55))
+        # ax.axis((-1, 80, -1, 54))
+        # plt.xlabel("y-coordinate")
+        # plt.ylabel("x-coordinate")
+        # plt.scatter([40.01], [30.97], color="gold", marker="o", alpha=1, zorder=10, s=100)
+        # plt.scatter([57.07], [51.00], color="gold", marker="o", alpha=1, zorder=10, s=100)
+        # plt.text(41.5, 29, "q'", fontsize=30)
+        # plt.text(57.80, 51, "q''", fontsize=30)
+        # fig.subplots_adjust(bottom=0.19)
+        # fig.set_size_inches(13.9, 10.55)
+
         end_time_nav = time.time()
         ic(end_time_nav - start_time_nav)
-        # Smoothen the path
+        # Smoothen the path with a B-spline
         if self.smooth:
             path_or = path.copy()
             success = False
@@ -262,17 +306,25 @@ class DroneFlight:
             self.env_map.translate_point_to_world_coord(self.goal_grid, 0))
 
     def compute_starting_heading(self, path):
+        """
+        Compute the heading with which the drone should start. It has been hard-coded that the drone will start pointing
+        towards the first point in the trajectory after the start point
+        :param path: the list of point coordinates that the drone will follow
+        :return: None
+        """
         start_point = path[0]
         second_point = path[1]
         heading_vector = [second_point[0]-start_point[0], second_point[1]-start_point[1]]
         self.heading_start = pi/2 - atan2(heading_vector[0], heading_vector[1])
+
+        # Correction in the case that the heading exceeds 180 degrees
         if self.heading_start > pi:
             self.heading_start = -(2*pi-self.heading_start)
 
     def teleport_drone_start(self):
         """
         Method that teleports the drone to the start location
-        :return:
+        :return: None
         """
         # Initialize sensors
         self.sensors.initialize_sensors()
@@ -307,7 +359,7 @@ class DroneFlight:
     def take_off(self):
         """
         Method that arms the drone and makes it take-off
-        :return:
+        :return: None
         """
         # Start up the drone
         ic("arming the drone...")
@@ -323,7 +375,7 @@ class DroneFlight:
     def check_take_off(self):
         """
         Method that checks that the drone has actually taken off. If not, an error is raised.
-        :return:
+        :return: None
         """
         # Making sure that Api control has been enabled
         if not self.client.isApiControlEnabled(vehicle_name=self.vehicle_name):
@@ -351,7 +403,7 @@ class DroneFlight:
     def select_failure(self):
         """
         Function that selects the failure type that will take place during the flight and the moment in time.
-        :return:
+        :return: None
         """
         # Obtain start location
         start_x = self.start_world[0]
@@ -370,21 +422,20 @@ class DroneFlight:
     def fly_trajectory(self):
         """
         Method that flies the drone along the computed trajectory
-        :return:
+        :return: None
         """
         # see https://github.com/Microsoft/AirSim/wiki/moveOnPath-demo
         # this method is async and we are not waiting for the result since we are passing timeout_sec=0.
         ic("flying on path...")
-        # self.client.moveOnPathAsync(self.path, 12, 120, airsim.DrivetrainType.ForwardOnly,
-        #                             airsim.YawMode(False, 0), 20, 1)
         self.client.moveOnPathAsync(self.path, 1, 10000, airsim.DrivetrainType.ForwardOnly,
                                     airsim.YawMode(False, 0), 2, 1, vehicle_name=self.vehicle_name)
 
     def check_goal_arrival(self, failed):
         """
         Method that checks whether the drone has arrived to its destination. It is considered that the drone has arrived
-        to its destination if the distance between its position and the goal is less than 2 AirSim metres.
-        :return: whether the drone has arrived to its goal
+        to its destination if the distance between its position and the goal is less than 2 AirSim distance units.
+        :return: whether the drone has arrived to its goal, the distance to the destination and the code that
+        encapsulates whether the reason why the drone did not reach the destination
         """
         # Obtain drone and goal locations
         drone_location = self.client.simGetVehiclePose(vehicle_name=self.vehicle_name)
@@ -447,13 +498,12 @@ class DroneFlight:
         # Starting to store the data from the sensors and for tuning the controller
         self.sensors.start_signal_sensors_data_storage()
         self.controller_tuning.initialize_data_gathering()
-        # failed = int(self.controller_tuning_switch)
-        failed = 0
+        failed = int(self.controller_tuning_switch)
 
+        # While the drone has not reached destination or collided. Initializing loop parameters
         not_arrived = 1
         self.collision_type = 0
         start_time = time.time()
-        # While the drone has not reached destination or collided
         while not_arrived:
             # When tuning the controller, storing the sensor data is not required
             if not self.controller_tuning_switch:
@@ -466,16 +516,17 @@ class DroneFlight:
 
             # Obtain the distance to destination
             not_arrived, distance, self.collision_type = self.check_goal_arrival(failed)
+
             # When tuning the controller, executing failures is not required
-            # if not self.controller_tuning_switch:
-            failed = self.failure_factory.execute_failures(distance)
+            if not self.controller_tuning_switch:
+                failed = self.failure_factory.execute_failures(distance)
 
             # Manual break in the collection of data
             if keyboard.is_pressed('K'):
                 print('The letter K has been pressed.')
                 break
 
-            # When tuning the controller (also when not tuning), the maximum flight time is limited --> 40 sec
+            # The maximum flight time is limited --> 40 sec
             end_time = time.time()
             if (end_time-start_time) > 40/self.clock_speed:
                 not_arrived, distance, self.collision_type = [0, 100, 5]
@@ -490,7 +541,7 @@ class DroneFlight:
         """
         Method that resets the state of the drone in order to carry out a new iteration. For that purpose, it resets the
         client, as well as returning the damaged coefficients to one.
-        :return:
+        :return: None
         """
         self.failure_factory.reset(reset_failures_airsim)
         self.client.reset()
@@ -502,7 +553,7 @@ class DroneFlight:
         """
         Method that carries out the complete flight of a drone. First, the occupancy map is extracted and the navigation
         of the drone is computed. Then, the drone is teleported to the start, the drone takes-off and flies the
-        trajectory. Along the way, the sensor data is collected. Once concluded, the drone is brough back to the start
+        trajectory. Along the way, the sensor data is collected. Once concluded, the drone is brought back to the start
         :param navigation_type: the type of navigation used
         :param start_point: the start location for the flight
         :param goal_point: the goal location of the flight
@@ -512,7 +563,7 @@ class DroneFlight:
         :param activate_map_extraction: whether the map should be extracted. When carrying out multiple runs, extracting
         the environment every time is very expensive. Hence, the altitude could be fixed for multiple runs such that
         the map remains constant. When the altitude is maintained constant, the map does not have to be extracted.
-        :return:
+        :return: the total trajectory error
         """
         # Obtain occupancy map from the AirSim environment
         if activate_map_extraction:
@@ -546,103 +597,7 @@ class DroneFlight:
         total_error = self.controller_tuning.tuning_cost_function(self.collision_type, self.path)
         self.controller_tuning.scope_plotting_signals()
 
-        # self.controller_tuning.scope_plotting_signals(True,
-        #                                               "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Simulator_images\\Debugging\\Positive_zero_correct_V_and_float_and_filter")
-        # self.controller_tuning.scope_plotting_signals(True,
-        #                                               "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Simulator_images\\Debugging\\Positive_zero_correct_V")
-        # self.controller_tuning.scope_plotting_signals(True,
-        #                                               "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Simulator_images\\Debugging\\Negative_zero_correct_V_and_float_and_filter_and_posd")
         # Reset all the stored values from the flight
         if activate_reset:
             self.reset(True)
         return total_error
-
-
-if __name__ == "__main__":
-    # User input
-    args = load_user_input()
-
-    # Fly drone
-    drone_flight = DroneFlight(args.altitude_m, args.altitude_range_m, args.cell_size_m,
-                               args.ue4_airsim_conversion_units, args.robot_radius, args.sensors_lst, args.cameras_info,
-                               args.sample_rate, min_flight_distance_m=args.min_flight_distance_m,
-                               saved_vertices_filename=args.saved_vertices_filename,
-                               update_saved_vertices=args.update_saved_vertices, plot2D=args.plot2D, plot3D=args.plot3D,
-                               PID_tuning=args.PID_tuning,
-                               failure_types=args.failure_types, activate_take_off=args.activate_take_off)
-    drone_flight.run(navigation_type=args.navigation_type, start_point=args.start, goal_point=args.goal)
-
-#
-# import airsim
-# import time
-# client = airsim.MultirotorClient()
-# client.setImuActivation(True, 2000, False)
-# time.sleep(10)
-# potato = client.getImuStoredDataVec()
-# client.cleanImuStoredData()
-#
-# print(len(potato['timestamps']))
-# print((potato['timestamps'][-1] - potato['timestamps'][0])/1e9)
-# [(potato['timestamps'][i+1]-potato['timestamps'][i])/1e9 for i in range(len(potato['timestamps'])-1)]
-# sum([(potato['timestamps'][i+1]-potato['timestamps'][i])/1e9 for i in range(len(potato['timestamps'])-1)])
-#
-#
-#
-#
-#
-# import airsim
-# import time
-# client = airsim.MultirotorClient()
-# client.armDisarm(True)
-# client.simGetImages([airsim.ImageRequest("0", 0)])
-# client.setBarometerActivation(True, 56, False)
-# time.sleep(10)
-# potato = client.getBarometerStoredDataVec()
-# client.cleanBarometerStoredData()
-#
-# print(len(potato['timestamps']))
-# print((potato['timestamps'][-1] - potato['timestamps'][0])/1e9)
-#
-#
-# import airsim
-# import time
-# client = airsim.MultirotorClient()
-# client.setMagnetometerActivation(True, 56, False)
-# time.sleep(10)
-# potato = client.getMagnetometerStoredDataVec()
-# client.cleanMagnetometerStoredData()
-#
-# print(len(potato['timestamps']))
-# print((potato['timestamps'][-1] - potato['timestamps'][0])/1e9)
-#
-# import airsim
-# import time
-# client = airsim.MultirotorClient()
-# client.setGpsActivation(True, 1000, False)
-# time.sleep(10)
-# potato = client.getGpsStoredDataVec()
-# client.cleanGpsStoredData()
-#
-# print(len(potato['timestamps']))
-# print((potato['timestamps'][-1] - potato['timestamps'][0])/1e9)
-
-
-
-# import os
-# times = [int(i[:-4]) for i in os.listdir("D:\AirSim simulator\AirSim\PythonClient\multirotor\Occupancy_grid\Sensor_data\20210715-163858_1\front")[:-1]]
-# time_passed = [times[i+1] - times[i] for i in range(len(times)-1)]
-# [abs(time_passed[i+1] - time_passed[i]) for i in range(len(time_passed)-1)]
-#
-#
-# import os
-# times = [int(i[15:-4]) for i in os.listdir("D:\AirSim simulator\AirSim\PythonClient\multirotor\Occupancy_grid\Sensor_data\Test\\2021-07-21-16-52-37\images")[:-1]]
-# time_passed = [times[i+1] - times[i] for i in range(len(times)-1)]
-# [abs(time_passed[i+1] - time_passed[i]) for i in range(len(time_passed)-1)]
-
-
-# import time
-# import airsim
-# client = airsim.MultirotorClient()
-# client.startRecording()
-# time.sleep(10)
-# client.stopRecording()

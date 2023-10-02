@@ -149,7 +149,6 @@ Drone_flight/Failure_injection/FailureTypes/Old
 Environment_extraction/Point_files
 
 user_input_file_loc.py
-Dummy.py
 
 # Unnecessary files from PythonRobotics
 Drone_grid_navigation.PythonRobotics/AerialNavigation

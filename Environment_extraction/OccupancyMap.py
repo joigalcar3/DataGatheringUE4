@@ -261,16 +261,34 @@ class OccupancyMap:
         Plot the points in 2D with matplotlib
         :return:
         """
-        plt.figure()
+        import matplotlib as mpl
+        mpl.rcParams['pdf.fonttype'] = 42
+        mpl.rcParams['ps.fonttype'] = 42
+        mpl.rcParams['font.family'] = 'Arial'
+        mpl.rcParams['grid.alpha'] = 0.5
+        # mpl.use('Agg')
+        mpl.use('TkAgg')
+        font = {'size': 42,
+                'family': "Arial"}
+        mpl.rc('font', **font)
+        fig = plt.figure()
         object_names = self.filtered_points.keys()
         total_number_points = 0
         for name in object_names:
             plt.scatter(self.filtered_points[name][:, 1], self.filtered_points[name][:, 0], s=10)
             total_number_points += self.filtered_points[name][:, 0].shape[0]
         ic("Total number of points: " + str(total_number_points))
-        plt.xlabel("Y-coordinate")
-        plt.ylabel("X-coordinate")
+        plt.xlabel("y-coordinate")
+        plt.ylabel("x-coordinate")
         plt.grid(True)
+        ax = plt.gca()
+        ax.ticklabel_format(axis="y", style="sci", scilimits=(0, 1))
+        ax.ticklabel_format(axis="x", style="sci", scilimits=(0, 1))
+        fig.set_size_inches(19.24, 10.55)
+        fig.subplots_adjust(left=0.13, top=0.95, right=0.98, bottom=0.17)
+        # location_save = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Thesis_report\\Images\\Corrected_blade_damage_plots"
+        # plot_name = "2D_cross"
+        # fig.savefig(os.path.join(f"{location_save}", f"{plot_name}.pdf"), bbox_inches='tight')
         plt.show()
 
     def plot_projected_points_3D_grid(self):

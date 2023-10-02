@@ -1,3 +1,19 @@
+#!/usr/bin/env python
+"""
+Provides the DroneCamera class that provides all the functions desired from an AirSim camera object, such as the
+capturing of images and their structured storage for dataset build-up.
+"""
+
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.2 (21/12/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
+
+# Import
 import airsim
 import os
 import numpy as np
@@ -11,6 +27,14 @@ class DroneCamera:
     Class that serves as interface for the DroneSensors class for the camera sensor
     """
     def __init__(self, alias, characteristics, client, flight_folder, vehicle_name=''):
+        """
+        Initializes the drone camera class
+        :param alias: name given to the camera
+        :param characteristics: characteristics of the camera
+        :param client: AirSim client object
+        :param flight_folder: flight path to the flight information folder
+        :param vehicle_name: name of the vehicle
+        """
         self.alias = alias  # Name give to the camera
         self.camera_name = characteristics["camera_name"]  # Name of the camera in AirSim
         self.image_type = characteristics["image_type"]    # What type of image do we want to obtain: vision, depth, seg
@@ -44,11 +68,12 @@ class DroneCamera:
     def store_camera_metadata(self):
         """
         Method to store the information from the camera prior to the flight in an Excel
-        :return:
+        :return: None
         """
         camera_name = ''
         trial_counter = 0
         while camera_name == '':
+            # In the case that the function is run faster than the camera is instantiated in UE4
             if trial_counter > 2:
                 raise Exception("The camera metadata has an unknown camera name")
             elif trial_counter != 0:
@@ -56,6 +81,8 @@ class DroneCamera:
             response = self.client.simGetImages([self.obtain_camera_image()], vehicle_name=self.vehicle_name)[0]
             camera_name = response.camera_name
             trial_counter += 1
+
+        # Dimensions of the images taken by the camera
         self.width = response.width
         self.height = response.height
 
@@ -80,7 +107,7 @@ class DroneCamera:
         calling the client.simGetImages() method. The DroneCamera class does not perform the image call since it is
         better to call the images of all cameras simultaneously. In that way, there is a single call (computationally
         efficient) and we make sure that all images are taken at the same moment in time.
-        :return:
+        :return: None
         """
         timestamp = response.time_stamp
         if self.pixels_as_float:
@@ -93,12 +120,11 @@ class DroneCamera:
         """
         Write the information stored by the camera objects to their respective files. A different approach is taken
         depending on whether the images should be stored as floats or whether they should be compressed.
-        :return:
+        :return: None
         """
         for timestamp in self.stored_responses.keys():
             filename = os.path.join(self.camera_folder, str(timestamp))
-            if self.pixels_as_float:
-
+            if self.pixels_as_float:  # store the pixels as floats
                 print("Type %d, size %d" % (self.image_type, len(self.stored_responses[timestamp])))
                 airsim.write_pfm(os.path.normpath(filename + '.pfm'),
                                  airsim.get_pfm_array(self.stored_responses[timestamp]))
@@ -113,18 +139,19 @@ class DroneCamera:
 
     def obtain_camera_image(self):
         """
-        Method which allows the call of an image only from the present camera object.
+        Method which calls an image only from the present camera object.
         :return:
         """
         return airsim.ImageRequest(self.camera_name, self.image_type, self.pixels_as_float, self.compress)
 
 
 if __name__ == "__main__":
-    client = airsim.MultirotorClient()
-    folder = 'Sensor_data'
+    # Simple use of the DroneCamera class
+    client = airsim.MultirotorClient()  # AirSim client object
+    folder = 'Sensor_data'  # folder name where the sensor data is stored
     folder = os.path.join(os.getcwd(), folder)
-    flight_folder = os.path.join(folder, time.strftime("%Y%m%d-%H%M%S"))
+    flight_folder = os.path.join(folder, time.strftime("%Y%m%d-%H%M%S"))  # folder name where the camera data is stored
     os.mkdir(flight_folder)
-    alias = 'front'
-    cameras_info = {"camera_name": "0", "image_type": 0}
-    camera = DroneCamera(alias, cameras_info, client, flight_folder)
+    alias = 'front'  # alias of the camera
+    cameras_info = {"camera_name": "0", "image_type": 0}  # camera characteristics
+    camera = DroneCamera(alias, cameras_info, client, flight_folder)  # camera object
