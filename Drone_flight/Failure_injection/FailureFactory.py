@@ -1,13 +1,34 @@
-import random
+#!/usr/bin/env python
+"""
+Provides the FailureFactory object which creates and administers the failure types desired to be injected in the vehicle
+during flight by the user for the generation of the dataset.
+
+The failure factory creates the pool of potential failures that could be injected during the flight given the user
+input and, for every run, it randomly selects and executes one of those failures. It also stores all the failure
+information in the Flight_info file for later analysis and creating the labels required for training any FDD approach.
+"""
+
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.2 (21/12/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
+
+
+# Imports
 import os
 import csv
 import time
-from PropFlyOff import PropFlyOff
-from PropDamageAdvancedSingleBlade import PropDamageAdvancedSingleBlade
-from PropDamage import PropDamage
-from ActuatorSaturation import ActuatorSaturation
-from ActuatorLocked import ActuatorLocked
+import random
 from icecream import ic
+from PropFlyOff import PropFlyOff
+from PropDamage import PropDamage
+from ActuatorLocked import ActuatorLocked
+from ActuatorSaturation import ActuatorSaturation
+from PropDamageAdvancedSingleBlade import PropDamageAdvancedSingleBlade
 
 
 class FailureFactory:
@@ -20,7 +41,14 @@ class FailureFactory:
     - prop_fly_off: propeller fly off. The thrust output of each propeller is either 0 or 1
     - prop_damage_dis: propeller damage discrete. The thrust of each propeller is either 0.25, 0.5, 0.75 or 1.
     - prop_damage_con: propeller damage continuous. The thrust of each propeller can take any value between 0 and 1.
-    - actuator_saturation: actuator saturation. The actuator is saturated and produces a constant PWM of 1 (the maximum).
+    - prop_damage_advanced_single_blade_dis: propeller blade damage discrete modelled using the Blade Element Theory
+    model proposed in the paper: "Blade Element Theory Model for UAV Blade Damage Simulation. The propeller can have
+    suffered a damage in which 20%, 40%, 60% or 80% of the propeller was lost.
+    - prop_damage_advanced_single_blade_con: propeller blade damage continuous modelled using the Blade Element
+    Theory model proposed in the paper: "Blade Element Theory Model for UAV Blade Damage Simulation. The propeller can
+    have suffered any damage between 0 and 1.
+    - actuator_saturation: actuator saturation. The actuator is saturated and produces a constant PWM of 1
+    (the maximum).
     - actuator_locked_dis: actuator locked discrete. The actuator is locked and produces one of the following constant
     PWMs: {0, 0.25, 0.5, 0.75}
     - actuator_locked_con: actuator locked continuous. The actuator is locked and produces a constant PWM between 0 and
@@ -44,6 +72,13 @@ class FailureFactory:
               "Percent_trip", "Collision_type", "Camera_fps", "IMU_frequency"]
 
     def __init__(self, user_input, client, clock_speed=1, vehicle_name=''):
+        """
+        It initializes the FailureFactory object.
+        :param user_input: the inputs provided by the user
+        :param client: the AirSim client object
+        :param clock_speed: the simulation clock speed
+        :param vehicle_name: name of the vehicle to which the failure factory has been assigned
+        """
         if user_input.flight_info_remote_storage_location is None:
             self.folder_name = os.path.join(os.getcwd(), self.folder_name)
         else:
@@ -85,8 +120,8 @@ class FailureFactory:
         self.end_timestamp = None         # Timestamp at which the iteration is concluded
         self.failure_timestamp = None     # Timestamp at which the failure is executed
 
-        self.camera_fps = user_input.sample_rates['camera']
-        self.imu_frequency = user_input.sample_rates['imu']
+        self.camera_fps = user_input.sample_rates['camera']  # Camera FPS
+        self.imu_frequency = user_input.sample_rates['imu']  # IMU sampling frequency
 
     def initialise_failure_file(self):
         """
@@ -127,20 +162,26 @@ class FailureFactory:
         """
         Function that selects the failure type, the failure mode and the location along the flight in which it will
         be injected.
-        :param distance:
+        :param distance: distance between the start and the goal locations
         :return: None
         """
+        # Choose a random mode out of all the possible modes, including the healthy state and all the potential classes
+        # of failures
         self.chosen_mode = random.randint(1, self.failure_modes)
-        if self.chosen_mode != 1:
+        if self.chosen_mode != 1:  # if there is a failure
             index = [i for i in range(len(self.failure_modes_lst))
                      if self.failure_modes_lst[i] < self.chosen_mode][-1]
             failure_name = self.failure_types[index][0:-8]
             continuity = self.failure_types[index][-7:-4]
             time_mode = self.failure_types[index][-3:]
             self.continuity, self.time_mode = self.time_continuity_conversion(continuity, time_mode)
+
+            # Select failure mode from the particular failure class
             self.chosen_failure = self.failure_factory[failure_name](self.continuity, self.time_mode,
                                                                      vehicle_name=self.vehicle_name)
             self.local_failure_mode = self.chosen_mode - self.failure_modes_lst[index]
+
+            # Select distance from the goal at which it will be injected
             self.injection_distance = random.randint(5, int(distance) - 5)
             self.total_distance = distance
             self.print_failure()
@@ -152,7 +193,7 @@ class FailureFactory:
         """
         Once the distance along the flight has been reached, this function will be called and the failure
         will be injected.
-        :param distance:
+        :param distance: distance between the current vehicle location and the goal
         :return: None
         """
         if (self.chosen_mode != 1 and distance <= self.injection_distance) or self.failure_timestamp is not None:
@@ -177,14 +218,17 @@ class FailureFactory:
 
     def failure_data_collection(self, collision_type, sensor_folder):
         """
-        All the information that will be stored in the flight info file is stored in row for later file writing.
+        All the information that will be stored in the flight info file is stored in a row for later file writing.
         :param collision_type: the type of collision: 0=no collision (reached destination), 1=obstacle, 2=ground
         :param sensor_folder: the name of the folder where all the sensor information of the iteration has been stored
         :return: row: dictionary with all the iteration information
         """
+        # Fill in the components of the header that are independent to the presence of a failure
         row = {self.header[0]: self.iteration, self.header[1]: sensor_folder, self.header[2]: self.start_timestamp,
                self.header[3]: self.client.getMultirotorState(vehicle_name=self.vehicle_name).timestamp,
                self.header[4]: self.clock_speed}
+
+        # Fill in the header with those components when there is no failure
         if self.chosen_mode == 1:
             row["Failure"] = 0
             row_keys = row.keys()
@@ -193,6 +237,7 @@ class FailureFactory:
                 if row_key not in row_keys:
                     row[row_key] = -1
         else:
+            # Fill in the header with those components when there is a failure
             row["Failure"] = 1
             row["Failure_type"] = self.chosen_failure.name
             row["Failure_mode"] = self.chosen_mode
@@ -242,6 +287,7 @@ class FailureFactory:
         """
         All the created variables are reset in order to make sure that unwanted information is not
         passed among iterations
+        :param reset_failures: whether the types of failures considered should be also reset
         :return: None
         """
         if reset_failures:

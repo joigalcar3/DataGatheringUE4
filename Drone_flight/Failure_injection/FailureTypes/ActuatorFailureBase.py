@@ -1,3 +1,18 @@
+#!/usr/bin/env python
+"""
+Provides the base class that contains the general methods for actuator failures.
+"""
+
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.2 (21/12/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
+
+# Imports
 import abc
 import airsim
 import random
@@ -7,7 +22,7 @@ class ActuatorFailureBase(abc.ABC):
     """
     Base class that contains the general methods for actuator failures.
     """
-    UE4_second = 1e9  # Duration of one second in UE4            self.chosen_failure.activate_failure()
+    UE4_second = 1e9  # Duration of one second in UE4
 
     propeller_names = ["front_left", "front_right", "back_right", "back_left"]  # name of each propeller
     failure_time_mode_names = ["Abrupt", "Linear"]  # Name of the failure mode depending of its behaviour along time
@@ -44,6 +59,13 @@ class ActuatorFailureBase(abc.ABC):
         pass
 
     def __init__(self, continuous=False, time_modality=0, vehicle_name='', lock_damage=None):
+        """
+        Initializes the ActuatorFailureBase class
+        :param continuous: whether the failure is chosen from a continuous or discrete range
+        :param time_modality: whether it happens abruptly or linearly
+        :param vehicle_name: the name of the vehicle
+        :param lock_damage: the percentage of propeller rotational speed at which it is locked
+        """
         self.continuous = continuous
         self.time_modality = time_modality  # 0 is no linear change, 1 is linear change and 2 is mixed
         self.vehicle_name = vehicle_name
@@ -121,7 +143,7 @@ class ActuatorFailureBase(abc.ABC):
     def activate_failure(self):
         """
         General method that activates the chosen failure.
-        :return:
+        :return: None
         """
         if not self.activated:
             self.unlock_mode()
@@ -146,9 +168,9 @@ class ActuatorFailureBase(abc.ABC):
     def mode_printer(self, client: airsim.MultirotorClient, failure_mode: int) -> str:
         """
         Method which prints information about the chosen failure mode.
-        :param client: airsim client object
+        :param client: AirSim client object
         :param failure_mode: the chosen mode of failure within the current failure type.
-        :return:
+        :return: the text to be printed
         """
         self.client = client
         self.mode = failure_mode

@@ -1,7 +1,22 @@
+#!/usr/bin/env python
+"""
+Provides the class that emulates the behaviour of a damaged propeller using the Blade Element Theory model presented in
+the paper: "Blade Element Theory Model for UAV Blade Damage Simulation"
+"""
+
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.2 (21/12/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
+
+# Imports
 import random
 import numpy as np
 from icecream import ic
-
 from ActuatorFailureBase import ActuatorFailureBase
 
 
@@ -13,8 +28,8 @@ class PropDamageAdvancedSingleBlade(ActuatorFailureBase):
     value. For the present research, single propeller SINGLE BLADE failure is considered (hence the name of the class).
     The damaged blade will always be the one pointing in the 0 degrees direction.
 
-    (Dis) Since there are 4 propellers and each propeller can have 16 failure modes, there are 64 failure modes. A thrust
-    coefficient with a value of 1 is not considered to be a failure mode since that is simply not a failure.
+    (Dis) Since there are 4 propellers and each propeller can have 16 failure modes, there are 64 failure modes. A
+    thrust coefficient with a value of 1 is not considered to be a failure mode since that is simply not a failure.
 
     (Con) Class which defines a failure type in which each of the propellers can attain any damage ceofficient and
     any starting angle.
@@ -24,6 +39,12 @@ class PropDamageAdvancedSingleBlade(ActuatorFailureBase):
     print_failure_args = ["Advanced Propeller Damage Single Blade", 4]
 
     def __init__(self, continuous=False, time_modality=0, vehicle_name=''):
+        """
+        Initializes the high fidelity damaged propeller type of failure
+        :param continuous: whether the failure magnitude is chosen from a continuous range or a discrete list
+        :param time_modality: whether the failure happens abruptly or linearly
+        :param vehicle_name: the name of the vehicle
+        """
         super().__init__(continuous, time_modality, vehicle_name, "damage")
         self.start_propeller_angle = None
         self.blade = 0
@@ -31,7 +52,7 @@ class PropDamageAdvancedSingleBlade(ActuatorFailureBase):
     def abrupt_failure(self):
         """
         Method which defines the changes in the case that the failure is abrupt
-        :return:
+        :return: None
         """
         self.client.setDamageCoefficientAdvanced(self.propeller, self.blade, self.thrust_coefficient_final * 100,
                                                  self.start_propeller_angle, vehicle_name=self.vehicle_name)
@@ -40,7 +61,7 @@ class PropDamageAdvancedSingleBlade(ActuatorFailureBase):
     def linear_failure(self):
         """
         Method which defines the changes in the case that the failure is linear
-        :return:
+        :return: None
         """
         error_message = "There does not exist a linear failure implementation of {}".format(self.print_failure_args[0])
         raise ValueError(error_message)
@@ -50,7 +71,7 @@ class PropDamageAdvancedSingleBlade(ActuatorFailureBase):
         Method which defines the start of the linear failure. When the linear failure is activated, some initial values
         have to be stored, such as the initial time stamp that will be used to compute the slope and the direction
         of the change, whether the lock coefficient needs to be increased or decreased.
-        :return:
+        :return: None
         """
         error_message = "There does not exist a linear failure implementation of {}".format(self.print_failure_args[0])
         raise ValueError(error_message)
@@ -59,7 +80,7 @@ class PropDamageAdvancedSingleBlade(ActuatorFailureBase):
         """
         Before any failure takes place, the failure is activated, meaning that the propeller stops being driven by the
         controller but is controlled by the lock propeller coefficient.
-        :return:
+        :return: None
         """
         self.start_failure_timestamp = self.client.getMultirotorState(vehicle_name=self.vehicle_name).timestamp
         self.start_pwm = self.client.getMotorPWMs(vehicle_name=self.vehicle_name)[self.propeller_names[self.propeller]]
@@ -69,7 +90,7 @@ class PropDamageAdvancedSingleBlade(ActuatorFailureBase):
         """
         Method that defines important information of the failure type. In this case the propeller affected and the
         final lock coefficient that will be induced.
-        :return:
+        :return: None
         """
         if self.continuous:
             self.propeller = (self.mode - 1)
@@ -85,12 +106,13 @@ class PropDamageAdvancedSingleBlade(ActuatorFailureBase):
     def reset(self, vehicle_name=""):
         """
         Method which resets the injected failure
-        :return:
+        :return: None
         """
         self.client.resetDamageCoefficientAdvanced(vehicle_name=vehicle_name)
 
 
 if __name__ == "__main__":
+    # Simple implementation which shows the functionality of this failure class
     import airsim
     import time
     import sys

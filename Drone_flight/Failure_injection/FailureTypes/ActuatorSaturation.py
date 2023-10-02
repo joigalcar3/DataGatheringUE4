@@ -1,5 +1,18 @@
-from icecream import ic
+#!/usr/bin/env python
+"""
+Provides the class that emulates the behaviour of a saturated propeller.
+"""
 
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.2 (21/12/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
+
+from icecream import ic
 from ActuatorLocked import ActuatorLocked
 
 
@@ -13,13 +26,19 @@ class ActuatorSaturation(ActuatorLocked):
     print_failure_args = ["Saturation", 2]
 
     def __init__(self, continuous=False, time_modality=0, vehicle_name=''):
+        """
+        Initializes the actuator saturation type of failure
+        :param continuous: whether the failure magnitude is chosen from a continuous range or a discrete list
+        :param time_modality: whether the failure happens abruptly or linearly
+        :param vehicle_name: the name of the vehicle
+        """
         super().__init__(continuous, time_modality, vehicle_name)
 
     def define_mode(self):
         """
         Method that defines important information of the failure type. In this case the propeller affected and the
         final lock coefficient that will be induced.
-        :return:
+        :return: None
         """
         self.propeller = self.mode - 1
         self.lock_coefficient_final = 1
@@ -28,13 +47,14 @@ class ActuatorSaturation(ActuatorLocked):
     def reset(self, vehicle_name=""):
         """
         Method which resets the injected failure
-        :return:
+        :return: None
         """
         self.client.setLockedPropellers(vehicle_name=vehicle_name)
         self.client.setLockedPropellerCoefficients(vehicle_name=vehicle_name)
 
 
 if __name__ == "__main__":
+    # Simple implementation which shows the functionality of this failure class
     import airsim
     import time
     import sys
