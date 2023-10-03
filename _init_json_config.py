@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Provides the function that returns the location of the Airsim json settings file.
+Provides the function that returns the location of the AirSim json settings file.
 """
 
 __author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"

@@ -1,5 +1,170 @@
-# DataGatheringUE4
-Code for generating drone sensor data under sensor and actuator faults using the AirSim simulator within Unreal Engine 4
+# Data gathering from Unreal Engine 4
+![record screenshot](Doc_images/Pipeline.png)
+
+This work provides the Python tools for the generation of drone sensor data under actuator faults using the AirSim simulator 
+within Unreal Engine 4 as proposed in the paper: "Unreal Success: Vision-Based UAV Fault Detection and Diagnosis Frame".
+This entails all the commands that interact with the UE4 environment for the generation of the occupancy map, 
+drone navigation and drone flight, as well as the failure injection and the data collection.
+
+The repository contains Python code for:
+- the generation of an occupancy of the UE4 environment
+- path planning in the occupancy map
+- flight execution
+- in-flight failure injection
+- data collection and dataset generation
+- scoping tool for debugging
+
+## Motivation
+For the development and performance assessment of vision-based FDD algorithms, it is required to have a dataset
+which includes IMU and camera output in nominal flight and in failure scenarios. Unfortunately, the current available
+datasets do not include IMU sensor information, such as the [VisDrone dataset](https://github.com/VisDrone/VisDrone-Dataset)
+or the [Indoor Navigation UAV Dataset](https://www.imperial.ac.uk/intelligent-digital-systems/indoor-uav-data/)
+, and do not have any recorded scenarios with failures, such as the 
+[UZH-FPV Drone Racing Dataset](https://fpv.ifi.uzh.ch/) or
+the [Zurich Urban Micro Aerial Vehicle Dataset](https://rpg.ifi.uzh.ch/zurichmavdataset.html).
+
+Gathering large quantities of data for knowledge-based fault detection models with an UAV is very time consuming,
+dangerous and expensive; data would have to be annotated, multiple failure modes would have to be induced in the
+vehicle and the flight environment, as well as the UAV, would have to be adapted to minimise the potential risk. Besides
+that, in an experimental physical setting it is very difficult to collect data from various environments and conditions. A
+suitable alternative is the simulation of the vehicle in a realistic environment, the storage of the sensor synthetic data for
+model training and the transfer learning to the real world UAV. It has been observed that the addition of large quantities
+of synthetic data to a smaller real dataset would lead to a performance increment when compared to the scenario in
+which only real data is collected ([hybrid dataset](https://arxiv.org/abs/1709.07857)).
+
+This work presents UUFOSim (Unreal UAV Failure injectiOn Simulator), a data gathering pipeline
+built on AirSim for the collection of synthetic flight data with actuator failures in a urban environment.
+The potential of UUFOSim has been demonstrated for the Parrot Bebop® 2 UAV. Its aerodynamic model is available
+from [literature](https://ieeexplore.ieee.org/document/8764021) and it has been complemented with the blade damage model from the author's paper: 
+"Blade Element Theory Model for UAV Blade Damage Simulation".
+
+
+## Code structure
+The project contains the following files:
+
+GENERAL FILES
+* *\_\_init\_\_.py*: Provides the main file that the user should run in order to interact with Unreal Engine 4 and collect flight data. 
+The user should already be running Unreal Engine 4 in the background.
+
+* *\_init\_paths.py*: Provides the function that adds some folders to the path.
+
+* *user_input.py*: Provides all the user inputs, except data file paths, centralised in a single file
+
+* *user_input_file_loc.py*: Provides the file path to directories where data could be found or stored.
+It should be modified by the user to the right file paths before use.
+
+* *verify_user_input.py*: Provides a function that checks for obvious potential mistakes provided by the user in the 
+input files.
+
+* *\_init\_json\_config.py*: Provides the function that returns the location of the AirSim json settings file.
+
+* *utils.py*: Provides the function that help in the transformation of the UE4 point cloud into an occupancy map and the processing of
+data pulled from the simulation.
+
+* *compute_sample_rate.py*: Provides a boxplot showing the spread of the camera and IMU sampling rates for different 
+simulation clockspeeds. This information is later used to select the right simulation clockspeed for data collection.
+
+* *Plotter3D.py*: Provides the tools to represent the occupancy map and the vehicle trajectories in an interactive 3D environment.
+
+* *ScopePlotting.py*: Provides the procedural code in order to scope any signals given a specific command to the drone.
+It is used to easily visualize the functionality of the scoping function and for debugging purposes.
+
+* *Airsim_lib_mod*: Folder containing the modified files of the AirSim library. The user needs to replace the 
+default AirSim library files by the ones provided here. All the files are included in the folder for 
+easing the copy-paste process. However, the file that needs MUST be copied is the *client.py*. 
+Multiple functions were added that enable the rest of the code to interact with the UE4 simulator. 
+
+ENVIRONMENT EXTRACTION AND MANIPULATION (within the Environment_extraction folder)
+* *OccupancyMap.py*: Provides the OccupancyMap class in charge of building, manipulating and visualizing the occupancy map used for the
+navigation of the vehicle in the UE4 environment without colliding with obstacles.
+
+VEHICLE NAVIGATION (within the Drone_grid_navigation folder)
+* *GridNavigation.py*: Provides the tools to compute the trajectory that the drone should follow in the occupancy map in order to reach its
+destination from a provided initial point while avoiding the obstacles.
+
+* *Path_planning_comparison.py*: Provides the code for the generation of histograms that allow the comparison of the computational performance of the
+different navigation approaches considered. With computational performance it is referred to computational time.
+
+* *PythonRobotics*: Folder containing the robot navigation library from [PythonRobotics](https://github.com/AtsushiSakai/PythonRobotics/tree/master).
+Unfortunately, multiple files from this public navigation library had to be modified because they were either faulty or
+they require some adaptation for the problem at hand. As a result, the library has been downloaded and added to this
+repo instead of forking it or cloning it. Also, all the files were included because the imported files below have
+multiple dependencies spread through the rest of the library files.
+
+INJECTION OF FAILURES (within the Drone_flight/Failure_injection folder)
+* *FailureFactory.py*: Provides the FailureFactory object which creates and administers the failure types desired to be injected in the vehicle
+during flight by the user for the generation of the dataset. The failure factory creates the pool of potential failures that could be injected during the flight given the user
+input and, for every run, it randomly selects and executes one of those failures. It also stores all the failure
+information in the Flight_info file for later analysis and creating the labels required for training any FDD approach.
+
+* *FailureTypes/ActuatorFailureBase.py*: Provides the base class that contains the general methods for actuator failures.
+
+* *FailureTypes/ActuatorLocked.py*: Provides the class that emulates the behaviour of a locked propeller.
+
+* *FailureTypes/ActuatorSaturation.py*: Provides the class that emulates the behaviour of a saturated propeller.
+
+* *FailureTypes/PropDamage.py*: Provides the class that emulates the behaviour of a damaged propeller.
+
+* *FailureTypes/PropDamageAdvancedSingleBlade.py*: Provides the class that emulates the behaviour of a damaged propeller 
+using the Blade Element Theory model presented in the paper: "Blade Element Theory Model for UAV Blade Damage Simulation"
+
+* *FailureTypes/PropFlyOff.py*: Provides the class that emulates the behaviour of a propeller that has flown off.
+
+EXECUTION VEHICLE FLIGHT (within the Drone_flight folder)
+* *Data_gathering/DataGathering.py*: Provides the DataGathering object which collects flight and sensor data from a user-defined number of runs.
+
+* *Data_gathering/MultiThreadDataGathering.py*: Provides the code to run multiple drone agents collecting data (threads) simultaneously within the same simulation
+environment. ** EXPERIMENTAL **
+
+* *Data_gathering/DroneCamera.py*: Provides the DroneCamera class that provides all the functions desired from an AirSim camera object, such as the
+capturing of images and their structured storage for dataset build-up.
+
+* *Data_gathering/DroneSensors.py*: Provides the DroneSensors class that manages all the actions of the sensors, namely their initialization, activation and
+data storage, as well as their reinitialization for a new flight.
+
+* *DroneFlight.py*: Provides the DroneFlight class which carries out the complete flight for a single drone.
+It performs from the generation of the map with OccupancyMap, to the obstacle avoidance with GridNavigation, to the
+collection of data with DroneSensors. It incorporates all the methods in order to make a single flight successful.
+
+* *ControllerTuning.py*: Provides the tool to scope vehicle signals and computes the position error of the vehicle for its PID controller tuning.
+It create a functionality similar to the scoping function within Matlab in which the user can see at the end of the
+simulation the resulting signals for position, velocity, acceleration, etc.
+
+To start using the code you can download the required Python libraries stored within _requirements.txt_. For that purpose,
+it is as simple as running the following command within the command line:
+```shell script
+pip install -r requirements.txt
+```
+Then adjust the parameters that you deem necessary in _user\_input.py_ and 
+_user\_input\_file\_loc.py_, and run __init__.py_.
+
+You can also run it within Google Colab. For that you only copy-paste two lines. First:
+```shell script
+!git clone https://github.com/joigalcar3/DataGatheringUE4
+```
+This will clone the repository. Then you can open the _user\_input.py_ and 
+_user\_input\_file\_loc.py_ files and alter the user input. When altering the _user\_input\_file\_loc.py_
+file, you need to provide the path to certain directories. Since those directories do not exist by
+default, please create them. Second, run:
+```shell script
+!python DataGatheringUE4/__init__.py
+```
+
+## Implementation, results and conclusions
+The results of this work can be found in the author's Master thesis and paper:
+
+1. Master thesis: "From Data to Prediction: Vision-Based UAV Fault Detection and Diagnosis". Chapters 8.
+2. Paper: "Unreal Success: Vision-Based UAV Fault Detection and Diagnosis Frame". Section III and section V.A.. 
+
+These documents explain:
+* Environment and occupancy map extraction explanation
+* Detailed path planning explanation
+* Data collection pipeline explanation
+* Clock speed selection discussion
+* Debugging tool for signal scoping description
+* Description of the collected dataset
+
+![record screenshot](Doc_images/video_flight.gif)
 
 ## Installation steps
 
@@ -193,3 +358,16 @@ clockspeed) by integers. As a result, the sampling rates that one could choose f
 The path planning algorithms (PythonRobotics/PathPlanning) have been obtained from the PythonRobotics
 library of [Atsushi Sakai](https://github.com/AtsushiSakai/PythonRobotics). Multiple modifications have been 
 made to the original library in order to be compatible with the software architecture created for this project.
+
+
+## Contact
+Hope you enjoy the code!! For any questions, comments or suggestions, 
+please reach out to me at [jialvear@hotmail.com](jialvear@hotmail.com).
+
+
+    @inproceedings{dealvear2024UE4,
+      title={Unreal Success: Vision-Based UAV Fault Detection and Diagnosis Framework},
+      author={de Alvear Cárdenas, J.I. and de Visser, C.},
+      booktitle={AIAA Scitech 2024 Forum},
+      year={2024}
+    }

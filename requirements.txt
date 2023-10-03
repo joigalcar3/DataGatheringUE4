@@ -1,0 +1,13 @@
+airsim==1.3.0
+icecream==2.1.1
+keyboard==0.13.5
+Mapping==0.1.6
+matplotlib==3.4.1
+msgpack_python==0.5.6
+msgpack_rpc_python==0.4.1
+numpy==1.19.2
+opencv_contrib_python==4.5.1.48
+pandas==1.3.5
+pyswarm==0.6
+pyvista==0.30.1
+scipy==1.6.2
