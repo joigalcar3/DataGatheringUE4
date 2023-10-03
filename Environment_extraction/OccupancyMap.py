@@ -1,20 +1,51 @@
-import airsim
+#!/usr/bin/env python
+"""
+Provides the OccupancyMap class in charge of building, manipulating and visualizing the occupancy map used for the
+navigation of the vehicle in the UE4 environment without colliding with obstacles.
+"""
 
-import matplotlib.pyplot as plt
-from matplotlib.path import Path
-import pickle
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.2 (21/12/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
+
+# Imports
 import os
+import airsim
+import pickle
 from math import sqrt
 from icecream import ic
+import matplotlib.pyplot as plt
+from matplotlib.path import Path
+
 
 from Plotter3D import *
-from utils import counter_clockwise_ordering, compute_distance_points, obtain_outer_edge
 from user_input import load_user_input
+from utils import counter_clockwise_ordering, compute_distance_points, obtain_outer_edge
 
 
 class OccupancyMap:
+    """
+    Class which provides all the tools for extracting the point cloud from the UE4 simulator, build the occupancy map
+    and further manipulating it. Additionally, it provides 2D and 3D plots to visualize the occupancy map.
+    """
     def __init__(self, folder="Environment_extraction//Point_files", extent_x=100, extent_y=100, cell_size=1,
                  ue4_airsim_conv=100, client=None):
+        """
+        Initializes the OccupancyMap class
+        :param folder: location where the point cloud is stored or will be stored
+        :param extent_x: default size of the occupancy map along the x-axis
+        :param extent_y: default size of the occupancy map along the y-axis
+        :param cell_size: the number of UE4 simulation distance units that represent the side of a square cell in the
+        occupancy map
+        :param ue4_airsim_conv: the conversion of distance units from the UE4 coordinate frame to the AirSim coordinate
+        frame
+        :param client: the AirSim client object
+        """
         self.client = client
         self.folder = os.path.join(os.getcwd(), folder)
         isExist = os.path.exists(self.folder)
@@ -34,7 +65,7 @@ class OccupancyMap:
         self.limit_y_min = int((-0.5 * self.extent_y) * self.cell_size)    # Lowest y value in UE4 coordinate frame
         self.limit_x_max = None   # Highest x value in UE4 coordinate frame
         self.limit_y_max = None   # Highest y value in UE4 coordinate frame
-        self.grid = np.zeros([self.extent_x, self.extent_y], dtype=np.bool)
+        self.grid = np.zeros([self.extent_x, self.extent_y], dtype=np.bool)  # occupancy map grid
         self.object_grid = np.zeros([self.extent_x, self.extent_y], dtype=np.bool)
         self.object_grid_coord = None
         self.object_grid_coord_all = None
@@ -46,7 +77,7 @@ class OccupancyMap:
         Extract the vertices coordinates from the AirSim recursive data structure
         :param filename: name of file where to save the data
         :param update_points: if the points exist, whether they should be updated
-        :return:
+        :return: None
         """
         self.filename = filename   # Name of the file where the point clouds are saved
         complete_filename = self.filename + '.p'   # Complete name with extension
@@ -66,10 +97,12 @@ class OccupancyMap:
     def set_env_dims(self):
         """
         Obtain the maximum dimensions of the environment from the filtered points.
-        :return:
+        :return: None
         """
         if self.filtered_points is None:
             self.project_points_altitude()
+
+        # Iterating over the coordinates of all the assets in the UE4 environment
         object_names = self.filtered_points.keys()
         min_xy = 2 * [0]
         max_xy = 2 * [0]
@@ -84,6 +117,8 @@ class OccupancyMap:
         self.limit_x_min = int(min_xy[0]) - (1 * (np.sign(min_xy[0]) == -1))     # Minimum x-coordinate in the UE4 reference frame
         self.limit_y_min = int(min_xy[1]) - (1 * (np.sign(min_xy[0]) == -1))     # Minimum y-coordinate in the UE4 reference frame
         ic("Real environment dimensions are: " + str(self.extent_x) + " x " + str(self.extent_y))
+
+        # Update the grid objects
         self.grid = np.zeros([self.extent_x, self.extent_y], dtype=np.bool)
         self.object_grid = np.zeros([self.extent_x, self.extent_y], dtype=np.bool)
 
@@ -94,10 +129,11 @@ class OccupancyMap:
         :param delta_h: range of altitudes where points can be found
         :return self.filtered_points: dictionary with the filtered point cloud for each object in the environment
         """
+        # Locate point cloud file
         complete_filename = self.filename + '.p'
         path_save = os.path.join(self.folder, complete_filename)
 
-        # Load the point cloud
+        # Load the point cloud and remove the objects' points coordinates into the 2D plane
         space_points = pickle.load(open(path_save, 'rb'))
         object_names = space_points.keys()
         filtered_points = {}
@@ -140,6 +176,7 @@ class OccupancyMap:
         # If there are no points cloud, it has to be computed first
         if self.filtered_points_array is None:
             self.collect_all_points()
+
         # Obtain the number of points, the max limits and loop over all the points in the cloud
         n_points = self.filtered_points_array.shape[0]
         self.limit_x_max = self.limit_x_min + self.extent_x * self.cell_size
@@ -147,8 +184,10 @@ class OccupancyMap:
         for i in range(n_points):
             x_pos = self.filtered_points_array[i, 0]
             y_pos = self.filtered_points_array[i, 1]
+
             # Check if the point is outside the grid bounds
-            if x_pos > self.limit_x_max or x_pos < self.limit_x_min or y_pos > self.limit_y_max or y_pos < self.limit_y_min:  # Ignore points outside of grid
+            if x_pos > self.limit_x_max or x_pos < self.limit_x_min or y_pos > self.limit_y_max or \
+                    y_pos < self.limit_y_min:  # Ignore points outside of grid
                 pass
             else:  # Else compute point location and save it in the grid
                 x_pos = int((x_pos - self.limit_x_min) / self.cell_size)
@@ -166,8 +205,12 @@ class OccupancyMap:
         """
         if self.filtered_points_array is None:
             self.fill_grid_filtered_points()
+
+        # Initializes output dictionary with the objects' names as keys and the objects' occupied grid cells as values
         objects_names = self.filtered_points.keys()
         self.object_grid_coord = {key: set() for key in objects_names}
+
+        # Iterate over all the objects
         for name in objects_names:
             points = self.filtered_points[name]
             for i in range(points.shape[0]):
@@ -194,6 +237,7 @@ class OccupancyMap:
         :return self.object_grid_coord_all: dictionary with the coordinates of the points inside the obstacles per
         obstacle.
         """
+        # Iterate over allthe objects
         objects_names = self.object_grid_coord.keys()
         self.object_grid_coord_all = self.object_grid_coord.copy()
         for name in objects_names:
@@ -224,18 +268,6 @@ class OccupancyMap:
 
                 # Apply mask to point grid
                 internal_points = points_grid[mask]
-            # elif object_points.shape[0] > 3 and len(set(object_points[:, 0])) == 1:
-            #     min_y = min(object_points[:, 0])
-            #     max_y = max(object_points[:, 0])
-            #     y_range = np.reshape(np.arange(min_y, max_y+1), [-1, 1])
-            #     x_range = np.ones((y_range.shape[0], 1)) * object_points[0, 0]
-            #     internal_points = np.hstack((x_range, y_range))
-            # elif object_points.shape[0] > 3 and len(set(object_points[:, 1])) == 1:
-            #     min_x = min(object_points[:, 1])
-            #     max_x = max(object_points[:, 1])
-            #     x_range = np.reshape(np.arange(min_x, max_x + 1), [-1, 1])
-            #     y_range = np.ones((x_range.shape[0], 1)) * object_points[0, 1]
-            #     internal_points = np.hstack((x_range, y_range))
             else:
                 internal_points = object_points
 
@@ -252,28 +284,30 @@ class OccupancyMap:
     def create_grid_full_obstacle(self):
         """
         Put together the grid of the obstacles and the grid of the points inside the obstacles.
-        :return:
+        :return: None
         """
         self.grid = self.grid + self.object_grid
 
     def plot_projected_points(self):
         """
         Plot the points in 2D with matplotlib
-        :return:
+        :return: None
         """
         import matplotlib as mpl
         mpl.rcParams['pdf.fonttype'] = 42
         mpl.rcParams['ps.fonttype'] = 42
         mpl.rcParams['font.family'] = 'Arial'
         mpl.rcParams['grid.alpha'] = 0.5
-        # mpl.use('Agg')
         mpl.use('TkAgg')
         font = {'size': 42,
                 'family': "Arial"}
         mpl.rc('font', **font)
+
+        # Create figure
         fig = plt.figure()
         object_names = self.filtered_points.keys()
         total_number_points = 0
+        # Iterate over all the objects
         for name in object_names:
             plt.scatter(self.filtered_points[name][:, 1], self.filtered_points[name][:, 0], s=10)
             total_number_points += self.filtered_points[name][:, 0].shape[0]
@@ -286,7 +320,8 @@ class OccupancyMap:
         ax.ticklabel_format(axis="x", style="sci", scilimits=(0, 1))
         fig.set_size_inches(19.24, 10.55)
         fig.subplots_adjust(left=0.13, top=0.95, right=0.98, bottom=0.17)
-        # location_save = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Thesis_report\\Images\\Corrected_blade_damage_plots"
+        # Uncomment the following lines if the user desires to store the file
+        # location_save = ""
         # plot_name = "2D_cross"
         # fig.savefig(os.path.join(f"{location_save}", f"{plot_name}.pdf"), bbox_inches='tight')
         plt.show()
@@ -294,7 +329,7 @@ class OccupancyMap:
     def plot_projected_points_3D_grid(self):
         """
         Plot the points and the occupancy in an interactive 3D mesh
-        :return:
+        :return: None
         """
         self.plotter = Plotter3D(self, interactive=True)
         self.plotter.remove_point_clouds()
@@ -306,7 +341,7 @@ class OccupancyMap:
         Plot the start and the goal locations in red
         :param start: location of the starting point
         :param goal: location of the target point
-        :return:
+        :return: None
         """
         start = self.translate_point_to_UE4_coord(start, 0)
         goal = self.translate_point_to_UE4_coord(goal, 0)
@@ -318,7 +353,7 @@ class OccupancyMap:
         Once the grid has been plotted in 3D, the computed path is plotted with 3D arrows.
         :param color: color of the arrows that show the path
         :param path: path that the drone must follow
-        :return:
+        :return: None
         """
         if self.plotter is None:
             self.plot_projected_points_3D_grid()
@@ -342,7 +377,7 @@ class OccupancyMap:
         Translates a path composed of points in list format to a list of points in Vector3r format (AirSim coordinates)
         encapsulating them in an airsim.Vector3r object
         :param path: path of coordinates
-        :return:
+        :return: airsim.Vector3r object with the waypoints that the vehicle should follow
         """
         Vector3r_waypoints = []
         for point in path:
@@ -412,7 +447,7 @@ class OccupancyMap:
         :param update_vertices_flag: whether the saved points are updated
         :param plot_2D: whether the 2D plots are generated
         :param plot3D: whether the 3D plots are generated
-        :return:
+        :return: None
         """
         self.extract_obstacle_vertices(filename=filename_vertices, update_points=update_vertices_flag)
         self.project_points_altitude(h, delta_h)
@@ -429,6 +464,7 @@ class OccupancyMap:
 
 
 if __name__ == "__main__":
+    # Simple implementation which shows the functionality of the Occupancy map class
     # User input
     args = load_user_input()
     altitude = args.altitude_m * args.ue4_airsim_conversion_units
