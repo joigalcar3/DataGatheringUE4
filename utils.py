@@ -1,10 +1,25 @@
+#!/usr/bin/env python
+"""
+Provides the function that help in the transformation of the UE4 point cloud into an occupancy map and the processing of
+data pulled from the simulation.
+"""
+
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.2 (21/12/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
+
+# Imports
 import csv
 import os
-from scipy.spatial import Delaunay
-from matplotlib.pyplot import *
 import pickle
 from math import *
-import numpy as np
+from matplotlib.pyplot import *
+from scipy.spatial import Delaunay
 
 
 def compute_distance_points(pointA, pointB):
@@ -23,15 +38,15 @@ def counter_clockwise_ordering(points):
     Function which rearranges a group of points of a grid clockwise. For that purpose, the centroid is found and they
     are ordered according to the angle they create by connecting them to the centroid.
     :param points: the list of point coordinates
-    :return:
+    :return: the list of the points sorted clockwise
     """
     if type([]) != type(points):
         points = points.tolist()
 
-    # compute centroid
+    # Compute centroid
     centroid = (sum([p[0] for p in points]) / len(points), sum([p[1] for p in points]) / len(points))
 
-    # sort by polar angle
+    # Sort by polar angle
     points.sort(key=lambda p: atan2(p[1] - centroid[1], p[0] - centroid[0]))
 
     return points
@@ -41,7 +56,7 @@ def transform_list_to_string(list_to_transform):
     """
     Simple method to transform a list of strings to a single string with each of the list elements separated by comma
     :param list_to_transform: list of strings
-    :return:
+    :return: single string with all the strings from the list
     """
     headers_str = ''
     for i in range(len(list_to_transform)):
@@ -67,7 +82,7 @@ def unwrapping_json(branch, output, keys_values, predecessor='', unwrapped_info=
     naming up until the previous level. Therefore, for the third level, the predecessor would be:
     first_level.second_level.
     :param unwrapped_info: the list with the information that will be returned by this method
-    :return:
+    :return: list containing the unwrapped information
     """
     # Initialise the list to stored the output
     if unwrapped_info is None:
@@ -111,10 +126,23 @@ def unwrapping_json(branch, output, keys_values, predecessor='', unwrapped_info=
 
 
 def merge_flight_infos(original_datasets, fi_folder, run, it):
-    # Flight info files
+    """
+    Function that merges multiple flight information files into a single one. This is useful when multiple data
+    gathering runs were executed, each generating a different flight info file. However, they need to combine in order
+    to generate a single dataset
+    :param original_datasets: the name of the flight info files that already exist
+    :param fi_folder: the folder where the flight info files are located
+    :param run: the number of the current data gathering run
+    :param it: the number of flights that have been processed, it is used as the index of the final flight information
+    file
+    :return: the current state of the "it" variable
+    """
+    # Flight info files. Checking whether any files were added to the directory
     files = os.listdir(fi_folder)
     new_files = np.setdiff1d(files, original_datasets)
     original_file = new_files[0]
+
+    # For the first run
     if run == 0:
         with open(os.path.join(fi_folder, original_file)) as f_start:
             csv_reader = csv.reader(f_start, delimiter=',')
@@ -136,6 +164,8 @@ def merge_flight_infos(original_datasets, fi_folder, run, it):
     else:
         it = it
 
+    # Add the rest of the new files (those corresponding to the data collected by the rest of the drones except the
+    # first one)
     drone_created_files = new_files[1:]
     with open(os.path.join(fi_folder, original_file), 'a', encoding='UTF8', newline='') as f_original:
         original_writer = csv.writer(f_original, delimiter=',')
@@ -148,8 +178,10 @@ def merge_flight_infos(original_datasets, fi_folder, run, it):
                         header = False
                     else:
                         row[0] = str(it)
-                        original_writer.writerow(row)
+                        original_writer.writerow(row)  # add the row to the main file
                         it += 1
+
+            # Once the contents from the file have been translated to the main file, the new file is deleted
             os.remove(os.path.join(fi_folder, file))
     return it
 
@@ -157,19 +189,22 @@ def merge_flight_infos(original_datasets, fi_folder, run, it):
 def obtain_outer_edge(points, alpha, only_outer=True):
     """
     Compute the alpha shape (concave hull) of a set of points. The higher the alpha, the larger the polygon considered.
-    :param points: np.array of shape (n,2) points.
-    :param alpha: alpha value.
+    :param points: np.array of shape (n,2) points
+    :param alpha: alpha value
     :param only_outer: boolean value to specify if we keep only the outer border
-    or also inner edges.
+    or also inner edges
     :return: set of (i,j) pairs representing edges of the alpha-shape. (i,j) are
-    the indices in the points array.
+    the indices in the points array. Also, a list of all the points that shape the convex hull.
     """
     assert points.shape[0] > 3, "Need at least four points"
 
     def add_edge(edges, i, j):
         """
-        Add an edge between the i-th and j-th points,
-        if not in the list already
+        Add an edge between the i-th and j-th points, if not in the list already
+        :param edges: tuples of points
+        :param i: first point
+        :param j: second point
+        :return: None
         """
         if (i, j) in edges or (j, i) in edges:
             # already added
@@ -180,14 +215,17 @@ def obtain_outer_edge(points, alpha, only_outer=True):
             return
         edges.add((i, j))
 
+    # Obtain the triangulation from Delaunay and initiate a set of edges
     tri = Delaunay(points)
     edges = set()
+
     # Loop over triangles:
     # ia, ib, ic = indices of corner points of the triangle
     for ia, ib, ic in tri.vertices:
         pa = points[ia]
         pb = points[ib]
         pc = points[ic]
+
         # Computing radius of triangle circumcircle
         # www.mathalino.com/reviewer/derivation-of-formulas/derivation-of-formula-for-radius-of-circumcircle
         a = np.sqrt((pa[0] - pb[0]) ** 2 + (pa[1] - pb[1]) ** 2)
@@ -196,10 +234,15 @@ def obtain_outer_edge(points, alpha, only_outer=True):
         s = (a + b + c) / 2.0
         area = np.sqrt(s * (s - a) * (s - b) * (s - c))
         circum_r = a * b * c / (4.0 * area)
+
+        # Only add triangles that fit in circles whose radius is smaller than circum_r
         if circum_r < alpha:
             add_edge(edges, ia, ib)
             add_edge(edges, ib, ic)
             add_edge(edges, ic, ia)
+
+    # The convex hull is defined by the points that still remain after adding the edges of all the triangles to the
+    # edges set
     point_indices = list(set([point for edge in edges for point in edge]))
     output_points = points[point_indices]
     return edges, output_points
@@ -219,6 +262,8 @@ def depickle(directory, filename):
 
 
 if __name__ == "__main__":
+    # Simple implementation which shows the functionality of function that obtains the outer edges of a cloud of points
+    # in 2D
     # Constructing the input point data
     np.random.seed(0)
     x = 3.0 * np.random.rand(2000)
