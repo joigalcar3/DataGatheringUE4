@@ -164,6 +164,7 @@ These documents explain:
 * Debugging tool for signal scoping description
 * Description of the collected dataset
 
+Below is a (sped-up) video of what a flight looks like from the viewpoint of the drone camera:
 ![record screenshot](Doc_images/video_flight.gif)
 
 ## Installation steps
