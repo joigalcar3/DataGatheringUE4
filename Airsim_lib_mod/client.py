@@ -976,47 +976,52 @@ class MultirotorClient(VehicleClient, object):
         return self.client.call_async("takeoff", timeout_sec, vehicle_name)
 
     # Methods related to the general gathering of plotting data
-    def setPlotDataCollectionActivation(self, activation:bool = False, vehicle_name=""):
+    def setPlotDataCollectionActivation(self, activation: bool = False, vehicle_name: str = ""):
         """
         Set the reference position activation boolean that activates or deactivates the plotting data gathering
         :param activation: whether plotting data should be gathered
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("setPlotDataCollectionActivation", activation, vehicle_name)
 
     # Methods related to the reference position data gathering
-    def setPosrefActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setPosrefActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                            vehicle_name: str = ""):
         """
-        Set the reference position activation boolean that activates or deactivates the reference position data gathering
+        Set the reference position activation boolean that activates or deactivates the reference position data
+        gathering
         :param activation: whether reference position data should be gathered
         :param sample_rate: sample rate at which data should be gathered. The sample rates to choose are all numbers
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setPosRefActivation", activation, sample_rate, vehicle_name)
 
-    def cleanPosrefStoredData(self, vehicle_name=""):
+    def cleanPosrefStoredData(self, vehicle_name: str = ""):
         """
         Stops the reference position data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanPosRefStoredData", vehicle_name)
 
-    def getPosrefStoredDataVec(self, vehicle_name=""):
+    def getPosrefStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored reference position data
-
-        Return: reference position as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: reference position as a dictionary
         """
         return self.client.call("getPosRefStoredDataVec", vehicle_name)
 
-    # Methods related to the reference position data gathering
-    def setPoserrorActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    # Methods related to the position error data gathering
+    def setPoserrorActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                              vehicle_name: str = ""):
         """
         Set the position error activation boolean that activates or deactivates the reference position data gathering
         :param activation: whether position error data should be gathered
@@ -1024,38 +1029,42 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setPosErrorActivation", activation, sample_rate, vehicle_name)
 
-    def cleanPoserrorStoredData(self, vehicle_name=""):
+    def cleanPoserrorStoredData(self, vehicle_name: str = ""):
         """
         Stops the position error data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanPosErrorStoredData", vehicle_name)
 
-    def getPoserrorStoredDataVec(self, vehicle_name=""):
+    def getPoserrorStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored position error data
-
-        Return: position error as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: error as a dictionary
         """
         return self.client.call("getPosErrorStoredDataVec", vehicle_name)
 
     # Methods related to the position error derivative data gathering
-    def setPoserrordotActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setPoserrordotActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                                 vehicle_name: str = ""):
         """
-        Set the position error derivative activation boolean that activates or deactivates the reference position data gathering
+        Set the position error derivative activation boolean that activates or deactivates the reference position data
+        gathering
         :param activation: whether position error derivative data should be gathered
         :param sample_rate: sample rate at which data should be gathered. The sample rates to choose are all numbers
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
@@ -1064,52 +1073,55 @@ class MultirotorClient(VehicleClient, object):
     def cleanPoserrordotStoredData(self, vehicle_name=""):
         """
         Stops the position error derivative data gathering and cleans the already stored data
-        :return:
+        :return: None
         """
         self.client.call("cleanPosErrorDotStoredData", vehicle_name)
 
-    def getPoserrordotStoredDataVec(self, vehicle_name=""):
+    def getPoserrordotStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored position error derivative data
-
-        Return: reference position as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: reference position as a dictionary
         """
         return self.client.call("getPosErrorDotStoredDataVec", vehicle_name)
 
     # Methods related to the reference velocity data gathering
-    def setVelrefActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setVelrefActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                            vehicle_name: str = ""):
         """
-        Set the reference velocity activation boolean that activates or deactivates the reference velocity data gathering
+        Set the reference velocity activation boolean that activates or deactivates the reference velocity data
+        gathering
         :param activation: whether reference velocity data should be gathered
         :param sample_rate: sample rate at which data should be gathered. The sample rates to choose are all numbers
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setVelRefActivation", activation, sample_rate, vehicle_name)
 
-    def cleanVelrefStoredData(self, vehicle_name=""):
+    def cleanVelrefStoredData(self, vehicle_name: str = ""):
         """
         Stops the reference velocity data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanVelRefStoredData", vehicle_name)
 
-    def getVelrefStoredDataVec(self, vehicle_name=""):
+    def getVelrefStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored reference velocity data
-
-        Return: reference velocity as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: reference velocity as a dictionary
         """
         return self.client.call("getVelRefStoredDataVec", vehicle_name)
 
     # Methods related to the velocity data gathering
-    def setVelActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setVelActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                         vehicle_name: str = ""):
         """
         Set the velocity activation boolean that activates or deactivates the velocity data gathering
         :param activation: whether velocity data should be gathered
@@ -1117,92 +1129,98 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setVelActivation", activation, sample_rate, vehicle_name)
 
-    def cleanVelStoredData(self, vehicle_name=""):
+    def cleanVelStoredData(self, vehicle_name: str = ""):
         """
         Stops the velocity data gathering and cleans the already stored data
-        :return:
+        :return: None
         """
         self.client.call("cleanVelStoredData", vehicle_name)
 
-    def getVelStoredDataVec(self, vehicle_name=""):
+    def getVelStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored velocity data
-
-        Return: velocity as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: velocity as a dictionary
         """
         return self.client.call("getVelStoredDataVec", vehicle_name)
 
     # Methods related to the reference acceleration data gathering
-    def setAccrefActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setAccrefActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                            vehicle_name: str = ""):
         """
-        Set the reference acceleration activation boolean that activates or deactivates the reference acceleration data gathering
+        Set the reference acceleration activation boolean that activates or deactivates the reference acceleration data
+        gathering
         :param activation: whether reference acceleration data should be gathered
         :param sample_rate: sample rate at which data should be gathered. The sample rates to choose are all numbers
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setAccRefActivation", activation, sample_rate, vehicle_name)
 
-    def cleanAccrefStoredData(self, vehicle_name=""):
+    def cleanAccrefStoredData(self, vehicle_name: str = ""):
         """
         Stops the reference acceleration data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanAccRefStoredData", vehicle_name)
 
-    def getAccrefStoredDataVec(self, vehicle_name=""):
+    def getAccrefStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored reference acceleration data
-
-        Return: reference acceleration as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: reference acceleration as a dictionary
         """
         return self.client.call("getAccRefStoredDataVec", vehicle_name)
 
     # Methods related to the yaw transfer function data gathering
-    def setYawtransferfcnActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setYawtransferfcnActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                                    vehicle_name: str = ""):
         """
-        Set the yaw transfer function activation boolean that activates or deactivates the yaw transfer function data gathering
+        Set the yaw transfer function activation boolean that activates or deactivates the yaw transfer function data
+        gathering
         :param activation: whether yaw transfer function data should be gathered
         :param sample_rate: sample rate at which data should be gathered. The sample rates to choose are all numbers
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setYawTransferFcnActivation", activation, sample_rate, vehicle_name)
 
-    def cleanYawtransferfcnStoredData(self, vehicle_name=""):
+    def cleanYawtransferfcnStoredData(self, vehicle_name: str = ""):
         """
         Stops the yaw transfer function data gathering and cleans the already stored data
-        :return:
+        :return: None
         """
         self.client.call("cleanYawTransferFcnStoredData", vehicle_name)
 
-    def getYawtransferfcnStoredDataVec(self, vehicle_name=""):
+    def getYawtransferfcnStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored yaw transfer function data
-
-        Return: yaw transfer function as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: yaw transfer function as a dictionary
         """
         return self.client.call("getYawTransferFcnStoredDataVec", vehicle_name)
 
     # Methods related to the reference pqr data gathering
-    def setPqrrefActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setPqrrefActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                            vehicle_name: str = ""):
         """
         Set the reference pqr activation boolean that activates or deactivates the reference pqr data gathering
         :param activation: whether reference pqr data should be gathered
@@ -1210,30 +1228,32 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setPqrRefActivation", activation, sample_rate, vehicle_name)
 
-    def cleanPqrrefStoredData(self, vehicle_name=""):
+    def cleanPqrrefStoredData(self, vehicle_name: str = ""):
         """
         Stops the reference pqr data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanPqrRefStoredData", vehicle_name)
 
-    def getPqrrefStoredDataVec(self, vehicle_name=""):
+    def getPqrrefStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored reference pqr data
-
-        Return: reference pqr as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: reference pqr as a dictionary
         """
         return self.client.call("getPqrRefStoredDataVec", vehicle_name)
 
     # Methods related to the pqr data gathering
-    def setPqrActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setPqrActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                         vehicle_name: str = ""):
         """
         Set the pqr activation boolean that activates or deactivates the pqr data gathering
         :param activation: whether pqr data should be gathered
@@ -1241,30 +1261,32 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setPqrActivation", activation, sample_rate, vehicle_name)
 
-    def cleanPqrStoredData(self, vehicle_name=""):
+    def cleanPqrStoredData(self, vehicle_name: str = ""):
         """
         Stops the pqr data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanPqrStoredData", vehicle_name)
 
-    def getPqrStoredDataVec(self, vehicle_name=""):
+    def getPqrStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored pqr data
-
-        Return: pqr as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: pqr as a dictionary
         """
         return self.client.call("getPqrStoredDataVec", vehicle_name)
 
     # Methods related to the reference thrust data gathering
-    def setThrustrefActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setThrustrefActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                               vehicle_name: str = ""):
         """
         Set the reference thrust activation boolean that activates or deactivates the reference thrust data gathering
         :param activation: whether reference thrust data should be gathered
@@ -1272,30 +1294,32 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setThrustRefActivation", activation, sample_rate, vehicle_name)
 
-    def cleanThrustrefStoredData(self, vehicle_name=""):
+    def cleanThrustrefStoredData(self, vehicle_name: str = ""):
         """
         Stops the reference thrust data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanThrustRefStoredData", vehicle_name)
 
-    def getThrustrefStoredDataVec(self, vehicle_name=""):
+    def getThrustrefStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored reference thrust data
-
-        Return: reference thrust as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: reference thrust as a dictionary
         """
         return self.client.call("getThrustRefStoredDataVec", vehicle_name)
 
     # Methods related to the omegas (motor rotations) data gathering
-    def setOmegasActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setOmegasActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                            vehicle_name: str = ""):
         """
         Set the omegas activation boolean that activates or deactivates the omegas data gathering
         :param activation: whether omegas data should be gathered
@@ -1303,30 +1327,32 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setOmegasActivation", activation, sample_rate, vehicle_name)
 
-    def cleanOmegasStoredData(self, vehicle_name=""):
+    def cleanOmegasStoredData(self, vehicle_name: str = ""):
         """
         Stops the omegas data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanOmegasStoredData", vehicle_name)
 
-    def getOmegasStoredDataVec(self, vehicle_name=""):
+    def getOmegasStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored omegas data
-
-        Return: omegas as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: omegas as a dictionary
         """
         return self.client.call("getOmegasStoredDataVec", vehicle_name)
 
-    # Methods related to the reference position data gathering
-    def setYawrefActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    # Methods related to the reference yaw angle data gathering
+    def setYawrefActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                            vehicle_name: str = ""):
         """
         Set the reference yaw activation boolean that activates or deactivates the reference yaw data gathering
         :param activation: whether reference yaw data should be gathered
@@ -1334,30 +1360,32 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setYawRefActivation", activation, sample_rate, vehicle_name)
 
-    def cleanYawrefStoredData(self, vehicle_name=""):
+    def cleanYawrefStoredData(self, vehicle_name: str = ""):
         """
         Stops the reference yaw data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanYawRefStoredData", vehicle_name)
 
-    def getYawrefStoredDataVec(self, vehicle_name=""):
+    def getYawrefStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored reference yaw data
-
-        Return: reference yaw as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: reference yaw as a dictionary
         """
         return self.client.call("getYawRefStoredDataVec", vehicle_name)
 
     # Methods related to the orientation data gathering
-    def setOrientationActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setOrientationActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                                 vehicle_name: str = ""):
         """
         Set the orientation activation boolean that activates or deactivates the orientation data gathering
         :param activation: whether orientation data should be gathered
@@ -1365,30 +1393,32 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setOrientationActivation", activation, sample_rate, vehicle_name)
 
-    def cleanOrientationStoredData(self, vehicle_name=""):
+    def cleanOrientationStoredData(self, vehicle_name: str = ""):
         """
         Stops the orientation data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanOrientationStoredData", vehicle_name)
 
-    def getOrientationStoredDataVec(self, vehicle_name=""):
+    def getOrientationStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored reference orientation data
-
-        Return: orientation as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: orientation as a dictionary
         """
         return self.client.call("getOrientationStoredDataVec", vehicle_name)
 
     # Methods related to the position integrator data gathering
-    def setPositionintegratorActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setPositionintegratorActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                                        vehicle_name: str = ""):
         """
         Set the position integrator activation boolean that activates or deactivates the position integrator data gathering
         :param activation: whether position integrator data should be gathered
@@ -1396,30 +1426,32 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setPositionIntegratorActivation", activation, sample_rate, vehicle_name)
 
-    def cleanPositionintegratorStoredData(self, vehicle_name=""):
+    def cleanPositionintegratorStoredData(self, vehicle_name: str = ""):
         """
         Stops the position integrator data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanPositionIntegratorStoredData", vehicle_name)
 
-    def getPositionintegratorStoredDataVec(self, vehicle_name=""):
+    def getPositionintegratorStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored position integrator data
-
-        Return: position integrator as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: position integrator as a dictionary
         """
         return self.client.call("getPositionIntegratorStoredDataVec", vehicle_name)
 
     # Methods related to the thrust PI controller data gathering
-    def setThrustpiActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setThrustpiActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                              vehicle_name: str = ""):
         """
         Set the thrust PI controller activation boolean that activates or deactivates the thrust PI controller data gathering
         :param activation: whether thrust PI controller data should be gathered
@@ -1427,30 +1459,32 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setThrustPiActivation", activation, sample_rate, vehicle_name)
 
-    def cleanThrustpiStoredData(self, vehicle_name=""):
+    def cleanThrustpiStoredData(self, vehicle_name: str = ""):
         """
         Stops the thrust PI controller data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanThrustPiStoredData", vehicle_name)
 
-    def getThrustpiStoredDataVec(self, vehicle_name=""):
+    def getThrustpiStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored thrust PI controller data
-
-        Return: thrust PI controller as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: thrust PI controller as a dictionary
         """
         return self.client.call("getThrustPiStoredDataVec", vehicle_name)
 
     # Methods related to the damaged mass forces due to blade damage data gathering
-    def setDamagedmassforcesActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setDamagedmassforcesActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                                       vehicle_name: str = ""):
         """
         Set the damage mass forces activation boolean that activates or deactivates the mass forces due to blade damage
          data gathering
@@ -1459,30 +1493,32 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setDamagedMassForcesActivation", activation, sample_rate, vehicle_name)
 
-    def cleanDamagedmassforcesStoredData(self, vehicle_name=""):
+    def cleanDamagedmassforcesStoredData(self, vehicle_name: str = ""):
         """
         Stops the mass forces due to blade damage data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanDamagedMassForcesStoredData", vehicle_name)
 
-    def getDamagedmassforcesStoredDataVec(self, vehicle_name=""):
+    def getDamagedmassforcesStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored mass forces due to blade damage  data
-
-        Return: mass forces due to blade damage  as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: mass forces due to blade damage  as a dictionary
         """
         return self.client.call("getDamagedMassForcesStoredDataVec", vehicle_name)
 
     # Methods related to the damaged mass moments due to blade damage data gathering
-    def setDamagedmassmomentsActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setDamagedmassmomentsActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                                        vehicle_name: str = ""):
         """
         Set the damage mass moments activation boolean that activates or deactivates the mass moments due to blade damage
          data gathering
@@ -1491,30 +1527,32 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setDamagedMassMomentsActivation", activation, sample_rate, vehicle_name)
 
-    def cleanDamagedmassmomentsStoredData(self, vehicle_name=""):
+    def cleanDamagedmassmomentsStoredData(self, vehicle_name: str = ""):
         """
         Stops the mass moments due to blade damage data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanDamagedMassMomentsStoredData", vehicle_name)
 
-    def getDamagedmassmomentsStoredDataVec(self, vehicle_name=""):
+    def getDamagedmassmomentsStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored mass moments due to blade damage  data
-
-        Return: mass moments due to blade damage  as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: mass moments due to blade damage  as a dictionary
         """
         return self.client.call("getDamagedMassMomentsStoredDataVec", vehicle_name)
 
     # Methods related to the damaged aero forces due to blade damage data gathering
-    def setDamagedaeroforcesActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setDamagedaeroforcesActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                                       vehicle_name: str = ""):
         """
         Set the damage aero forces activation boolean that activates or deactivates the aero forces due to blade damage
          data gathering
@@ -1523,30 +1561,32 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setDamagedAeroForcesActivation", activation, sample_rate, vehicle_name)
 
-    def cleanDamagedaeroforcesStoredData(self, vehicle_name=""):
+    def cleanDamagedaeroforcesStoredData(self, vehicle_name: str = ""):
         """
         Stops the aero forces due to blade damage data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanDamagedAeroForcesStoredData", vehicle_name)
 
-    def getDamagedaeroforcesStoredDataVec(self, vehicle_name=""):
+    def getDamagedaeroforcesStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored aero forces due to blade damage  data
-
-        Return: aero forces due to blade damage  as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: aero forces due to blade damage  as a dictionary
         """
         return self.client.call("getDamagedAeroForcesStoredDataVec", vehicle_name)
 
     # Methods related to the damaged aero moments due to blade damage data gathering
-    def setDamagedaeromomentsActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setDamagedaeromomentsActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                                        vehicle_name: str = ""):
         """
         Set the damage aero moments activation boolean that activates or deactivates the aero moments due to blade damage
          data gathering
@@ -1555,30 +1595,32 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setDamagedAeroMomentsActivation", activation, sample_rate, vehicle_name)
 
-    def cleanDamagedaeromomentsStoredData(self, vehicle_name=""):
+    def cleanDamagedaeromomentsStoredData(self, vehicle_name: str = ""):
         """
         Stops the aero moments due to blade damage data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanDamagedAeroMomentsStoredData", vehicle_name)
 
-    def getDamagedaeromomentsStoredDataVec(self, vehicle_name=""):
+    def getDamagedaeromomentsStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored aero moments due to blade damage  data
-
-        Return: aero moments due to blade damage  as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: aero moments due to blade damage  as a dictionary
         """
         return self.client.call("getDamagedAeroMomentsStoredDataVec", vehicle_name)
 
     # Methods related to the time data gathering
-    def setTimeinfoActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setTimeinfoActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                              vehicle_name: str = ""):
         """
         Set the time activation boolean that activates or deactivates the time data gathering
         :param activation: whether time data should be gathered
@@ -1586,34 +1628,35 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setTimeInfoActivation", activation, sample_rate, vehicle_name)
 
-    def cleanTimeinfoStoredData(self, vehicle_name=""):
+    def cleanTimeinfoStoredData(self, vehicle_name: str = ""):
         """
         Stops the time data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanTimeInfoStoredData", vehicle_name)
 
-    def getTimeinfoStoredDataVec(self, vehicle_name=""):
+    def getTimeinfoStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored time data
-
-        Return: time as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: time as a dictionary
         """
         return self.client.call("getTimeInfoStoredDataVec", vehicle_name)
 
     # Methods related to the Camera data gathering
-    def setCameraActivation(self, activation:bool = False, sample_rate:int = 60,
+    def setCameraActivation(self, activation: bool = False, sample_rate:int = 60,
                             request=[ImageRequest("0", 0, False, True)],
-                            maximize:bool = False, vehicle_name=""):
+                            maximize: bool = False, vehicle_name: str = ""):
         """
-        Set the IMU activation boolean that activates or deactivates the IMU data gathering
+        Set the camera activation boolean that activates or deactivates the IMU data gathering
         :param activation: whether IMU data should be gathered
         :param sample_rate: sample rate at which data should be gathered. The sample rates to choose are all numbers
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
@@ -1621,28 +1664,16 @@ class MultirotorClient(VehicleClient, object):
         :param request: image request with the camera name, the imaeg type, whether it should be saved with floats and
         whether it should be compressed.
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setCameraActivation", activation, sample_rate, request, vehicle_name)
-    #
-    # def cleanImuStoredData(self, vehicle_name=""):
-    #     """
-    #     Stops the IMU data gathering and cleans the already stored data
-    #     :return:
-    #     """
-    #     self.client.call("cleanCameraStoredData", vehicle_name)
-    #
-    # def cleanImuStoredData(self, path, vehicle_name=""):
-    #     """
-    #     Stops the IMU data gathering and cleans the already stored data
-    #     :return:
-    #     """
-    #     self.client.call("saveCameraStoredData", path, vehicle_name)
 
     # Methods related to the IMU data gathering
-    def setImuActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setImuActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                         vehicle_name: str = ""):
         """
         Set the IMU activation boolean that activates or deactivates the IMU data gathering
         :param activation: whether IMU data should be gathered
@@ -1650,30 +1681,32 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
+        :param vehicle_name: name of the vehicle
         :return:
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setImuActivation", activation, sample_rate, vehicle_name)
 
-    def cleanImuStoredData(self, vehicle_name=""):
+    def cleanImuStoredData(self, vehicle_name: str = ""):
         """
         Stops the IMU data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanImuStoredData", vehicle_name)
 
-    def getImuStoredDataVec(self, vehicle_name=""):
+    def getImuStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored IMU data
-
-        Return: IMU data as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: IMU data as a dictionary
         """
         return self.client.call("getImuStoredDataVec", vehicle_name)
 
     # Methods related to the PWM data gathering
-    def setPwmActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setPwmActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                         vehicle_name: str = ""):
         """
         Set the PWM activation boolean that activates or deactivates the PWM data gathering
         :param activation: whether PWM data should be gathered
@@ -1681,30 +1714,32 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setPwmActivation", activation, sample_rate, vehicle_name)
 
-    def cleanPwmStoredData(self, vehicle_name=""):
+    def cleanPwmStoredData(self, vehicle_name: str = ""):
         """
         Stops the PWM data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanPwmStoredData", vehicle_name)
 
-    def getPwmStoredDataVec(self, vehicle_name=""):
+    def getPwmStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored PWM data
-
-        Return: PWM as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: PWM as a dictionary
         """
         return self.client.call("getPwmStoredDataVec", vehicle_name)
 
     # Methods related to the ground truth position data gathering
-    def setPositionActivation(self, activation:bool = False, sample_rate:float = 1000, maximize:bool = False, vehicle_name=""):
+    def setPositionActivation(self, activation: bool = False, sample_rate: float = 1000, maximize: bool = False,
+                              vehicle_name: str = ""):
         """
         Set the position activation boolean that activates or deactivates the ground truth position data gathering
         :param activation: whether ground truth position data should be gathered
@@ -1712,31 +1747,32 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setPositionActivation", activation, sample_rate, vehicle_name)
 
-    def cleanPositionStoredData(self, vehicle_name=""):
+    def cleanPositionStoredData(self, vehicle_name: str = ""):
         """
         Stops the Position data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanPositionStoredData", vehicle_name)
 
-    def getPositionStoredDataVec(self, vehicle_name=""):
+    def getPositionStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored ground truth position data
-
-        Return: ground truth position data as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: ground truth position data as a dictionary
         """
         return self.client.call("getPositionStoredDataVec", vehicle_name)
 
     # Methods related to the barometer data gathering
     def setBarometerActivation(self, activation: bool = False, sample_rate: float = 60, maximize: bool = False,
-                         vehicle_name=""):
+                               vehicle_name: str = ""):
         """
         Set the Barometer activation boolean that activates or deactivates the Barometer data gathering
         :param activation: whether Barometer data should be gathered
@@ -1744,31 +1780,32 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setBarometerActivation", activation, sample_rate, vehicle_name)
 
-    def cleanBarometerStoredData(self, vehicle_name=""):
+    def cleanBarometerStoredData(self, vehicle_name: str = ""):
         """
         Stops the Barometer data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanBarometerStoredData", vehicle_name)
 
-    def getBarometerStoredDataVec(self, vehicle_name=""):
+    def getBarometerStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored Barometer data
-
-        Return: Barometer data as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: Barometer data as a dictionary
         """
         return self.client.call("getBarometerStoredDataVec", vehicle_name)
 
-    # Methods related to the barometer data gathering
+    # Methods related to the Magnetometer data gathering
     def setMagnetometerActivation(self, activation: bool = False, sample_rate: float = 60, maximize: bool = False,
-                               vehicle_name=""):
+                                  vehicle_name: str = ""):
         """
         Set the Magnetometer activation boolean that activates or deactivates the Magnetometer data gathering
         :param activation: whether Magnetometer data should be gathered
@@ -1776,31 +1813,32 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setMagnetometerActivation", activation, sample_rate, vehicle_name)
 
-    def cleanMagnetometerStoredData(self, vehicle_name=""):
+    def cleanMagnetometerStoredData(self, vehicle_name: str = ""):
         """
         Stops the Magnetometer data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanMagnetometerStoredData", vehicle_name)
 
-    def getMagnetometerStoredDataVec(self, vehicle_name=""):
+    def getMagnetometerStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored Magnetometer data
-
-        Return: Magnetometer data as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: Magnetometer data as a dictionary
         """
         return self.client.call("getMagnetometerStoredDataVec", vehicle_name)
 
-    # Methods related to the barometer data gathering
+    # Methods related to the GPS data gathering
     def setGpsActivation(self, activation: bool = False, sample_rate: float = 60, maximize: bool = False,
-                               vehicle_name=""):
+                         vehicle_name: str = ""):
         """
         Set the GPS activation boolean that activates or deactivates the GPS data gathering
         :param activation: whether GPS data should be gathered
@@ -1808,158 +1846,142 @@ class MultirotorClient(VehicleClient, object):
         obtained from dividing the highest frequency 334 Hz by integers. Therefore, the possible frequencies are
         approximately: 334, 167, 111, 84, 67, 56, 48, 42, 38, 35, ...
         :param maximize: whether the sample rate should be maximize, get as many samples as possible
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         if maximize:
             sample_rate = 1000000000
         self.client.call("setGPSActivation", activation, sample_rate, vehicle_name)
 
-    def cleanGpsStoredData(self, vehicle_name=""):
+    def cleanGpsStoredData(self, vehicle_name: str = ""):
         """
         Stops the GPS data gathering and cleans the already stored data
-        :return:
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("cleanGPSStoredData", vehicle_name)
 
-    def getGpsStoredDataVec(self, vehicle_name=""):
+    def getGpsStoredDataVec(self, vehicle_name: str = ""):
         """
         Get the stored GPS data
-
-        Return: GPS data as a dictionary
-
+        :param vehicle_name: name of the vehicle
+        :return: GPS data as a dictionary
         """
         return self.client.call("getGPSStoredDataVec", vehicle_name)
 
     # Methods related to the drone teleportation
-    def setTeleportYawRef(self, yaw_angle_ref = 0, vehicle_name=""):
+    def setTeleportYawRef(self, yaw_angle_ref: int = 0, vehicle_name: str = ""):
         """
         Set the initial reference heading (in degrees) that the drone should follow once it has been teleported
-
-        Args:
-            yaw_angle_ref (int, optional): yaw angle of reference once teleportation is carried out
+        :param yaw_angle_ref: yaw angle of reference once teleportation is carried out
+        :param vehicle_name: name of the vehicle
+        :return: None
         """
         self.client.call("setTeleportYawRef", yaw_angle_ref, vehicle_name)
 
     # Methods related to the drone failures
-    def setDamageCoefficientAdvanced(self, propeller:int = 0, blade:int = 0, damage_coefficient:float = 0.0,
-                                     start_angle:float = 0.0, vehicle_name=""):
+    def setDamageCoefficientAdvanced(self, propeller: int = 0, blade: int = 0, damage_coefficient: float = 0.0,
+                                     start_angle: float = 0.0, vehicle_name: str = ""):
         """
-        Set the damage coefficient of a blade within a propeller to a specific value
-
-        Args:
-            propeller (int, optional): the propeller number whose blade's damage coefficient will be changed. Zero
-            corresponds to the front left propeller and 3 to the back left propeller.
-            blade (int, optional): the blade within the propeller to be damaged. 0 corresponds to the blade whose
-            starting angle will be equal to "start_angle".
-            damage_coefficient (float, optional): the damage coefficient assigned to the blade
-            start_angle (float, optional): the initial angle for "blade" 0 of the propeller "propeller".
-            vehicle_name (str, optional): Name of the vehicle to send this command to
-
+        Set the damage coefficient of a blade within a propeller to a specific value.
+        :param propeller: The propeller number whose blade's damage coefficient will be changed. Zero corresponds to the
+                          front left propeller, and 3 corresponds to the back left propeller.
+        :param blade: The blade within the propeller to be damaged. 0 corresponds to the blade whose starting angle will be
+                      equal to "start_angle".
+        :param damage_coefficient: The damage coefficient assigned to the blade.
+        :param start_angle: The initial angle for "blade" 0 of the propeller "propeller".
+        :param vehicle_name: Name of the vehicle to send this command to.
+        :return: None
         """
         self.client.call("setDamageCoefficientAdvanced", propeller, blade, damage_coefficient, start_angle, vehicle_name)
-        
-    def resetDamageCoefficientAdvanced(self, vehicle_name=""):
+
+    def resetDamageCoefficientAdvanced(self, vehicle_name: str = ""):
         """
-        Reset any potential advanced blade damage present in the drone
-
-        Args:
-            vehicle_name (str, optional): Name of the vehicle to send this command to
-
+        Reset any potential advanced blade damage present in the drone.
+        :param vehicle_name: Name of the vehicle to send this command to.
+        :return: None
         """
         self.client.call("resetDamageCoefficientAdvanced", vehicle_name)
 
-    def setSwitchActivateBladeDamageAdvanced(self, switch_activate_blade_damage_advanced:bool = False, vehicle_name=""):
+    def setSwitchActivateBladeDamageAdvanced(self, switch_activate_blade_damage_advanced: bool = False,
+                                             vehicle_name: str = ""):
         """
         Activate the blade damage. If True, from this point in time, a delta force and moment will be added to the
         forces and moments that were created by the drone's physical model.
-
-        Args:
-            switch_activate_blade_damage_advanced (bool, optional): activation switch. When True, the blade damage is
-            activated
-            vehicle_name (str, optional): Name of the vehicle to send this command to
-
+        :param switch_activate_blade_damage_advanced: Activation switch. When True, the blade damage is activated.
+        :param vehicle_name: Name of the vehicle to send this command to.
+        :return: None
         """
         self.client.call("setSwitchActivateBladeDamageAdvanced", switch_activate_blade_damage_advanced, vehicle_name)
 
-    def setDamageCoefficients(
-            self, front_left = 1.0, front_right = 1.0, back_right = 1.0, back_left = 1.0, vehicle_name=""):
+    def setDamageCoefficients(self, front_left: float = 1.0, front_right: float = 1.0, back_right: float = 1.0,
+                              back_left: float = 1.0, vehicle_name: str = ""):
         """
         Set the damage coefficients that affect the percentage of power available to each motor.
-
-        Args:
-            front_left (int, optional): front left propeller
-            front_right (int, optional): front right propeller
-            back_right (str, optional): back right propeller
-            back_left (str, optional): back left propeller
-            vehicle_name (str, optional): Name of the vehicle to send this command to
-
+        :param front_left: Damage coefficient for the front left propeller.
+        :param front_right: Damage coefficient for the front right propeller.
+        :param back_right: Damage coefficient for the back right propeller.
+        :param back_left: Damage coefficient for the back left propeller.
+        :param vehicle_name: Name of the vehicle to send this command to.
+        :return: None
         """
         self.client.call("setDamageCoefficients", front_left, front_right, back_right, back_left, vehicle_name)
 
-    def setLockedPropellers(
-            self, front_left:bool = False, front_right:bool = False,  back_right:bool = False, back_left:bool = False,
-            vehicle_name:str = ""):
+    def setLockedPropellers(self, front_left: bool = False, front_right: bool = False, back_right: bool = False,
+                            back_left: bool = False, vehicle_name: str = ""):
         """
-        Set which of the propellers are locked in place
-
-        Args:
-            front_left (int, optional): front left propeller
-            front_right (int, optional): front right propeller
-            back_right (str, optional): back right propeller
-            back_left (str, optional): back left propeller
-            vehicle_name (str, optional): Name of the vehicle to send this command to
-
+        Set which of the propellers are locked in place.
+        :param front_left: Lock status of the front left propeller.
+        :param front_right: Lock status of the front right propeller.
+        :param back_right: Lock status of the back right propeller.
+        :param back_left: Lock status of the back left propeller.
+        :param vehicle_name: Name of the vehicle to send this command to.
+        :return: None
         """
         self.client.call("setLockedProppellers", front_left, front_right, back_right, back_left, vehicle_name)
 
-    def setLockedPropellerCoefficients(
-            self, front_left = 1.0, front_right = 1.0, back_right = 1.0, back_left = 1.0, vehicle_name=""):
+    def setLockedPropellerCoefficients(self, front_left: float = 1.0, front_right: float = 1.0,
+                                       back_right: float = 1.0, back_left: float = 1.0, vehicle_name: str = ""):
         """
-        Set the PWM at which the each of the propellers are locked
-
-        Args:
-            front_left (int, optional): front left propeller
-            front_right (int, optional): front right propeller
-            back_right (str, optional): back right propeller
-            back_left (str, optional): back left propeller
-            vehicle_name (str, optional): Name of the vehicle to send this command to
-
+        Set the PWM at which each of the propellers are locked.
+        :param front_left: PWM value at which the front left propeller is locked.
+        :param front_right: PWM value at which the front right propeller is locked.
+        :param back_right: PWM value at which the back right propeller is locked.
+        :param back_left: PWM value at which the back left propeller is locked.
+        :param vehicle_name: Name of the vehicle to send this command to.
+        :return: None
         """
         self.client.call("setLockedPropellerCoefficients", front_left, front_right, back_right, back_left, vehicle_name)
 
-    def getDamageCoefficients(self, vehicle_name=""):
+    def getDamageCoefficients(self, vehicle_name: str = ""):
         """
         Get the damage coefficients that affect the percentage of power available to each motor.
-
-        Return: Damage Coefficients as a dictionary
-
+        :param vehicle_name: Name of the vehicle to send this command to (optional).
+        :return: Damage Coefficients as a dictionary.
         """
         return self.client.call("getDamageCoefficients", vehicle_name)
 
-    def getLockedPropellers(self, vehicle_name=""):
+    def getLockedPropellers(self, vehicle_name: str = ""):
         """
         Get which propellers are locked.
-
-        Return: Locked propellers as a dictionary
-
+        :param vehicle_name: Name of the vehicle to send this command to (optional).
+        :return: Locked propellers as a dictionary.
         """
         return self.client.call("getLockedPropellers", vehicle_name)
 
-    def getLockedPropellerCoefficients(self, vehicle_name=""):
+    def getLockedPropellerCoefficients(self, vehicle_name: str = ""):
         """
         Get the damage coefficients that affect the percentage of power available to each motor.
-
-        Return: Locked Propeller Coefficients as a dictionary
-
+        :param vehicle_name: Name of the vehicle to send this command to (optional).
+        :return: Locked Propeller Coefficients as a dictionary.
         """
         return self.client.call("getLockedPropellerCoefficients", vehicle_name)
 
-    def getMotorPWMs(self, vehicle_name=""):
+    def getMotorPWMs(self, vehicle_name: str = ""):
         """
-        Get the PWMs of all the motors
-
-        Return: PWMs as a dictionary
-
+        Get the PWMs of all the motors.
+        :param vehicle_name: Name of the vehicle to send this command to (optional).
+        :return: PWMs as a dictionary.
         """
         return self.client.call("getMotorPWMs", vehicle_name)
 
