@@ -1,13 +1,35 @@
+#!/usr/bin/env python
+"""
+Provides the tools to compute the trajectory that the drone should follow in the occupancy map in order to reach its
+destination from a provided initial point while avoiding the obstacles
+
+It uses the navigation libraries from PythonRobotics (https://github.com/AtsushiSakai/PythonRobotics/tree/master).
+Unfortunately, multiple files from this public navigation library had to be modified because they were either faulty or
+they require some adaptation for the problem at hand. As a result, the library has been downloaded and added to this
+repo instead of forking it or cloning it. Also, all the files were included because the imported files below have
+multiple dependencies spread through the rest of the library files.
+"""
+
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.2 (21/12/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
+
+# Imports
+from user_input import load_user_input
 from Environment_extraction.OccupancyMap import OccupancyMap
-from Drone_grid_navigation.PythonRobotics.PathPlanning.WavefrontCPP.wavefront_coverage_path_planner import wavefront, \
-    transform, visualize_path
+from Drone_grid_navigation.PythonRobotics.PathPlanning.AStar.a_star import AStarPlanner
+from Drone_grid_navigation.PythonRobotics.PathPlanning.CubicSpline.cubic_spline_planner import Spline2D
 from Drone_grid_navigation.PythonRobotics.PathPlanning.VoronoiRoadMap.voronoi_road_map import VoronoiRoadMapPlanner
 from Drone_grid_navigation.PythonRobotics.PathPlanning.InformedRRTStar.informed_rrt_star import InformedRRTStar
-from Drone_grid_navigation.PythonRobotics.PathPlanning.AStar.a_star import AStarPlanner
 from Drone_grid_navigation.PythonRobotics.PathPlanning.BSplinePath.bspline_path import approximate_b_spline_path
 from Drone_grid_navigation.PythonRobotics.PathPlanning.ProbabilisticRoadMap.probabilistic_road_map import prm_planning
-from Drone_grid_navigation.PythonRobotics.PathPlanning.CubicSpline.cubic_spline_planner import Spline2D
-from user_input import load_user_input
+from Drone_grid_navigation.PythonRobotics.PathPlanning.WavefrontCPP.wavefront_coverage_path_planner import wavefront, \
+    transform, visualize_path
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,8 +39,13 @@ class GridNavigation:
     """
     Class which carries out the navigation of the drone flight given a computed grid occupancy map
     """
-
     def __init__(self, om: OccupancyMap, plotter_2D=True, plotter_3D=True):
+        """
+        Initializes the GridNavigation object
+        :param om: occupancy map
+        :param plotter_2D: whether the 2D plots should be created
+        :param plotter_3D: whether the 3D plots should be created
+        """
         self.om = om
         self.grid = om.grid.copy()
         self.plotter_2D = plotter_2D
@@ -35,24 +62,12 @@ class GridNavigation:
         grid_wavefront = self.grid.astype('float')
         PT = transform(grid_wavefront, goal, robot_radius, transform_type='path', distance_type='euclidean', alpha=0.01)
         PT_path = wavefront(PT, start, goal)
-        # DT = transform(potato, goal, transform_type='distance')
-        # DT_path = wavefront(DT, start, goal)
 
-        # for row in range(grid_wavefront.shape[0]):
-        #     number = row
-        #     for column in range(grid_wavefront.shape[1]):
-        #         if isclose(grid_wavefront[row, column], 0, abs_tol=1e-6):
-        #             grid_wavefront[row, column] = number
-        #             number += 1
-        #         else:
-        #             grid_wavefront[row, column] = float('inf')
-        # path = wavefront(grid_wavefront, start, goal)
-
-        if self.plotter_2D:
+        if self.plotter_2D:  # 2D plot
             visualize_path(self.grid.astype('float'), start, goal, PT_path)
             plt.imshow(PT, cmap='cool', interpolation='nearest', origin='lower')
 
-        if self.plotter_3D:
+        if self.plotter_3D:  # 3D plot
             self.om.plot_trajectory_3d_grid(PT_path)
 
         print('Wavefront path has been computed')
@@ -60,7 +75,7 @@ class GridNavigation:
 
     def navigate_Voronoid(self, start, goal, robot_size=1):
         """
-        Voronoid navigation as explained in https://pythonrobotics.readthedocs.io/en/latest/
+        Voronoi navigation as explained in https://pythonrobotics.readthedocs.io/en/latest/
         :param start: start location
         :param goal: target location
         :param robot_size: size of the robot in order to maintain a minimum distance from the obstacles and avoid
@@ -77,12 +92,13 @@ class GridNavigation:
         ox = np.where(self.grid == True)[0].tolist()
         oy = np.where(self.grid == True)[1].tolist()
 
+        # Obtain deconflicted path
         rx, ry = VoronoiRoadMapPlanner(max(ox), max(oy), only_integers=True, show_animation=self.plotter_2D).planning(
             sx, sy, gx, gy, ox,
             oy, robot_size)
         path = [(i, j) for i, j in zip(rx, ry)]
 
-        if self.plotter_2D:
+        if self.plotter_2D:  # 2D plot
             plt.plot(oy, ox, ".k")
             plt.plot(sy, sx, "^r")
             plt.plot(gy, gx, "^c")
@@ -92,7 +108,7 @@ class GridNavigation:
             plt.pause(0.1)
             plt.show()
 
-        if self.plotter_3D:
+        if self.plotter_3D:  # 3D plot
             self.om.plot_trajectory_3d_grid(path)
 
         print('Voronoid path has been computed')
@@ -128,14 +144,14 @@ class GridNavigation:
         print("Done!!")
 
         # Plot path
-        if self.plotter_2D:
+        if self.plotter_2D:  # 2D plot
             rrt.draw_graph()
             plt.plot([y for (x, y) in path], [x for (x, y) in path], '-r')
             plt.grid(True)
             plt.pause(0.01)
             plt.show()
 
-        if self.plotter_3D:
+        if self.plotter_3D:  # 3D plot
             self.om.plot_trajectory_3d_grid(path)
 
         print('RRT_star path has been computed')
@@ -143,10 +159,10 @@ class GridNavigation:
 
     def navigation_A_star(self, start, goal, robot_radius=3):
         """
-        A*  navigation as explained in https://pythonrobotics.readthedocs.io/en/latest/
+        A* navigation as explained in https://pythonrobotics.readthedocs.io/en/latest/
         :param start: start location
         :param goal: target location
-        :param robot_size: size of the robot in order to maintain a minimum distance from the obstacles and avoid
+        :param robot_radius: size of the robot in order to maintain a minimum distance from the obstacles and avoid
         collisions
         :return path: path of points in grid coordinates that the drone must follow
         """
@@ -158,9 +174,6 @@ class GridNavigation:
         grid_size = 1
 
         # Coordinates of the obstacles
-        # ox = np.where(self.grid == True)[0].tolist()
-        # oy = np.where(self.grid == True)[1].tolist()
-
         a_star = AStarPlanner(self.grid, grid_size, robot_radius)
         rx, ry = a_star.planning(sx, sy, gx, gy, self.plotter_2D)
         path = [(i, j) for i, j in zip(rx, ry)]
@@ -168,9 +181,9 @@ class GridNavigation:
         # Reverse the path because the A* algorithm returns the path starting from the goal.
         path.reverse()
 
-        if self.plotter_2D:
-            ox = np.where(self.grid == True)[0].tolist()
-            oy = np.where(self.grid == True)[1].tolist()
+        if self.plotter_2D:  # 2D plot
+            ox = np.where(self.grid==True)[0].tolist()
+            oy = np.where(self.grid==True)[1].tolist()
             plt.plot(oy, ox, ".k")
             plt.plot(sy, sx, "og")
             plt.plot(gy, gx, "xb")
@@ -180,7 +193,7 @@ class GridNavigation:
             plt.pause(0.001)
             plt.show()
 
-        if self.plotter_3D:
+        if self.plotter_3D:  # 3D plot
             self.om.plot_trajectory_3d_grid(path)
 
         print('A_star path has been computed')
@@ -206,12 +219,8 @@ class GridNavigation:
         # It is checked whether the proposed path collides with the obstacles
         collision = self.check_collision(path_a)
 
-        # rix, riy = interpolate_b_spline_path(way_point_x, way_point_y,
-        #                                      n_course_point, degree=2)
-        # path_i = [(i, j) for i, j in zip(rix, riy)]
-
         # show results
-        if self.plotter_2D and not collision:
+        if self.plotter_2D and not collision:  # 2D plot
             plt.plot(way_point_x, way_point_y, '-og', label="way points")
             plt.plot(rax, ray, '-r', label="Approximated B-Spline path")
             # plt.plot(rix, riy, '-b', label="Interpolated B-Spline path")
@@ -222,16 +231,18 @@ class GridNavigation:
             # self.om.plot_trajectory_3d_grid(path_i)
             plt.show()
 
-        if self.plotter_3D and not collision:
+        if self.plotter_3D and not collision:  # 3D plot
             self.om.plot_trajectory_3d_grid(path_a)
 
         return path_a, collision
 
     def smooth_cubic_spline(self, path):
         """
-        Cubic spline navigation path smoother in continuous space as explained in https://pythonrobotics.readthedocs.io/en/latest/
+        Cubic spline navigation path smoother in continuous space as explained in
+        https://pythonrobotics.readthedocs.io/en/latest/
         :param path: original path from one of the other navigation algorithms
-        :return:
+        :return path_a: smoothed path of points in grid coordinates that the drone must follow
+                collision: whether the generated path collides with any of the created obstacles
         """
         # Obtain the x and y coordinates of the points along the path
         way_point_x = [i[0] for i in path]
@@ -247,9 +258,11 @@ class GridNavigation:
             ry.append(iy)
         rx.append(way_point_x[-1])
         ry.append(way_point_y[-1])
+
+        # Compile path and check for obstacles
         path_a = [(i, j) for i, j in zip(rx, ry)]
         collision = self.check_collision(path_a)
-        if self.plotter_2D and not collision:
+        if self.plotter_2D and not collision:  # 2D plot
             plt.plot(way_point_x, way_point_y, '-og', label="way points")
             plt.plot(rx, ry, '-r', label="Approximated cubic spline path")
             plt.grid(True)
@@ -257,7 +270,7 @@ class GridNavigation:
             plt.axis("equal")
             plt.show()
 
-        if self.plotter_3D and not collision:
+        if self.plotter_3D and not collision:  # 3D plot
             self.om.plot_trajectory_3d_grid(path_a, color='red')
 
         return path_a, collision
@@ -278,10 +291,11 @@ class GridNavigation:
             local_goal = path[i + 1][:2]
             # Check whether the trajectory moves only along the y-direction
             if local_goal[0] != local_start[0]:
-                # Obtain the slope of the line connecting both points
+                # Obtain the slope of the line connecting both points and its line equation
                 m = (local_goal[1] - local_start[1]) / (local_goal[0] - local_start[0])
                 line_equation = lambda x: m * (x - local_start[0]) + local_start[1]
 
+                # Obtain the line equations of the lines parallel and 1 cell apart
                 if distanced_obs:
                     line_equation_parallel_1 = lambda x: m * (x - local_start[0] - 1) + local_start[1]
                     line_equation_parallel_2 = lambda x: m * (x - local_start[0] + 1) + local_start[1]
@@ -295,7 +309,7 @@ class GridNavigation:
                     y = np.array(list(map(line_equation, x0)) + list(map(line_equation_parallel_1, x1)) + list(
                         map(line_equation_parallel_2, x2)))
                     x = np.vstack((x0, x1, x2)).flatten()
-                else:
+                else:  # In the case that we do not care about a collision a cell away from the obstacle
                     x = np.linspace(local_start[0], local_goal[0], 1000)
                     y = np.array(list(map(line_equation, x)))
             else:  # Only slice the y-axis
@@ -347,7 +361,7 @@ class GridNavigation:
         # The path is reversed because the PRM algorithm returns the path starting from the goal
         path.reverse()
 
-        if self.plotter_2D:
+        if self.plotter_2D:  # 2D plot
             plt.plot(oy, ox, ".k")
             plt.plot(sy, sx, "^r")
             plt.plot(gy, gx, "^c")
@@ -357,7 +371,7 @@ class GridNavigation:
             plt.pause(0.001)
             plt.show()
 
-        if self.plotter_3D:
+        if self.plotter_3D:  # 3D plot
             self.om.plot_trajectory_3d_grid(path)
 
         print('PRM path has been computed')
@@ -366,6 +380,7 @@ class GridNavigation:
 
 
 if __name__ == "__main__":
+    # Simple implementation which shows the functionality of this failure class
     # User input
     args = load_user_input()
     altitude = args.altitude_m * args.ue4_airsim_conversion_units
