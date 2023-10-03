@@ -178,7 +178,7 @@ Below is a (sped-up) video of what a flight looks like from the viewpoint of the
 
 With this instruction manual you should have access to:
 * Dedicated AirSim copy with the physics engine of Bebop 2 and the INDI controller. 
-For that, please contact José Ignacio ([j.i.dealvearcardenas@student.tudelft.nl](mailto:j.i.dealvearcardenas@student.tudelft.nl)), 
+For that, please contact José Ignacio ([jialvear@hotmail.com](mailto:jialvear@hotmail.com)), 
 who can provide you with a copy. In the future this software will be available in GitHub.
 * Coen de Visser login details for Unreal Engine. For that purpose, 
 please contact Coen de Visser ([c.c.devisser@tudelft.nl](mailto:c.c.devisser@tudelft.nl)).
