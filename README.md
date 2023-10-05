@@ -224,10 +224,14 @@ by clicking in “Add to Project”, as shown in the image below. Select the pro
 7. Follow the steps in ["Creating and Setting Up Unreal Environment"](https://microsoft.github.io/AirSim/unreal_custenv/) from the AirSim documentation, 
 using the project you created instead of LandscapeMountains, so you can skip steps 1 and 2. 
 If you have already opened your new project in UE4, then you can also skip step 3. In step 5, 
-it suggests copying the Unreal/Plugins folder into your new environment folder.
-Instead, we copy the *Airsim/Unreal/Environments/Blocks/Plugins* folder, 
-since it has the built modified AirSim version we want to use. At the end of this step, you should
-have the City environment opened from the C++, not from the UE4 launcher.
+make sure to run *build.cmd* before copying the Unreal/Plugins folder as mentioned in the note.
+Then, in the *Plugins* folder you just copied, search for the *AirSim/Source* folder,
+delete its contents and clone in it the author's repository called Airlib_FDD. This repository
+contains the modified Airlib library with the required functions that allow
+the Python API to interact with the UE4 simulator in order to collect the dataset we need.
+Then, proceed with the rest of the steps found in ["Creating and Setting Up Unreal Environment"](https://microsoft.github.io/AirSim/unreal_custenv/).
+At the end, you should have the City environment opened from the C++, not from 
+the UE4 launcher.
  
 8. In the UE4 editor you should see the “*ModularCity*” folder in the Content Browser tab, as in the image below. 
 Open “*Content/ModularCity/maps/ModularCity*” by double clicking on the corresponding icon. Then you will see the loaded
