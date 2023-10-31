@@ -177,10 +177,8 @@ Below is a (sped-up) video of what a flight looks like from the viewpoint of the
 * Python APIs
 
 With this instruction manual you should have access to:
-* Dedicated AirSim copy with the physics engine of Bebop 2 and the INDI controller. 
-For that, please contact José Ignacio ([jialvear@hotmail.com](mailto:jialvear@hotmail.com)), 
-who can provide you with a copy. In the future this software will be available in GitHub.
-* Coen de Visser login details for Unreal Engine. For that purpose, 
+* Dedicated AirSim copy with the physics engine of Bebop 2 and the INDI controller that can be found in the [Airlib_FDD](https://github.com/joigalcar3/Airlib_FDD) repository. 
+* For TU Delft students, Coen de Visser login details for Unreal Engine. For that purpose, 
 please contact Coen de Visser ([c.c.devisser@tudelft.nl](mailto:c.c.devisser@tudelft.nl)).
 
 Next, the installation and set-up steps for each of the aforementioned software components will be explained.
@@ -276,7 +274,7 @@ you can also move one folder up all those levels that you do not require to use 
 and you can delete or hide the unnecessary roads from the editable road level.
 
 Such process of merging roads can take up to a day of (monotonous) work. In order to avoid wasting your time, contact
-José Ignacio ([jialvear@hotmail.com](mailto:jialvear@hotmail.com)) who
+José Ignacio ([jose.dealvearcardenas@sjsu.edu](jose.dealvearcardenas@sjsu.edu)) if you are a TU Delft student who
 has already suffered this process and has merged all the PRG roads in order to have smooth simulations. He
 could provide you with the modified City environment.
 
@@ -300,7 +298,7 @@ made to the original library in order to be compatible with the software archite
 
 ## Contact
 Hope you enjoy the code!! For any questions, comments or suggestions, 
-please reach out to me at [jialvear@hotmail.com](jialvear@hotmail.com).
+please reach out to me at [jose.dealvearcardenas@sjsu.edu](jose.dealvearcardenas@sjsu.edu). Also, please consider citing our research work below when using this repository (the paper will be published in January 2024 and the BibTex reference will be updated around the 1st February 2024, including the DOI).
 
 
     @inproceedings{dealvear2024UE4,
